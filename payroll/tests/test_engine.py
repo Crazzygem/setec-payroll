@@ -39,8 +39,8 @@ class SalaryTaxBandTests(SimpleTestCase):
 
 class PayslipCalculationTests(SimpleTestCase):
     def test_worked_example_full_payslip(self):
-        """README example: base 2,200,000? No — base 2,000,000 + 200,000
-        allowance, 2 dependants, NSSF member."""
+        """README worked example: base 2,000,000 + 200,000 allowance,
+        2 dependants, NSSF member."""
         result = calculate_payslip(
             base=Decimal('2000000'), allowance=Decimal('200000'),
             dependents=2, nssf_member=True, is_resident=True,
