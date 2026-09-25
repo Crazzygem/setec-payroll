@@ -3,6 +3,43 @@
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md">
+    <div class="card stat-card"><div class="card-body py-2 px-3">
+      <div class="stat-label">Active employees</div>
+      <div class="stat-value">{{ active_employees }}</div>
+      <div class="text-muted" style="font-size:0.72rem">{{ employee_total }} records total</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card stat-card"><div class="card-body py-2 px-3">
+      <div class="stat-label">Latest run</div>
+      <div class="stat-value" style="font-size:1.05rem">
+        {{ run_summary.run.period_label|default:'—' }}</div>
+      {% if run_summary %}
+        <div class="text-muted" style="font-size:0.72rem">{{ run_summary.run.get_status_display }}</div>
+      {% endif %}
+    </div></div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card stat-card"><div class="card-body py-2 px-3">
+      <div class="stat-label">Gross payroll</div>
+      <div class="stat-value">{{ run_summary.gross|floatformat:0|intcomma|default:'—' }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card stat-card"><div class="card-body py-2 px-3">
+      <div class="stat-label">Tax withheld</div>
+      <div class="stat-value">{{ run_summary.tax|floatformat:0|intcomma|default:'—' }}</div>
+      {% if run_summary %}
+        <div class="text-muted" style="font-size:0.72rem">due GDT
+          {{ run_summary.run.gdt_due_date|date:'d M Y' }}</div>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+
 <div class="row g-3">
   <div class="col-md-6">
     <div class="card h-100">
@@ -18,7 +55,9 @@
     <div class="card h-100">
       <div class="card-body">
         <h5 class="mb-1">Payroll Runs</h5>
-        <p class="text-muted mb-3">Generate monthly payroll and printable payslips.</p>
+        <p class="text-muted mb-3">
+          {{ run_count }} run{{ run_count|pluralize }} — generate monthly payroll
+          and printable payslips.</p>
         <a href="{% url 'payroll:run_list' %}" class="btn btn-accent btn-sm">
           <i class="bi bi-cash-stack"></i> Open Payroll Runs</a>
       </div>
