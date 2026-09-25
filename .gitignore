@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Django
+db.sqlite3
+staticfiles/
+
+# OS / editor
+.DS_Store
+*.swp
