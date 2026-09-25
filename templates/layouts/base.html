@@ -78,7 +78,7 @@
   <aside class="sidebar d-flex flex-column">
     <a class="brand" href="{% url 'home' %}"><i class="bi bi-wallet2"></i> Payroll KH</a>
     <nav class="nav flex-column gap-1">
-      <a class="nav-link-side {% if request.resolver_match.app_name == 'core' %}active{% endif %}" href="{% url 'home' %}">
+      <a class="nav-link-side {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">
         <i class="bi bi-speedometer2"></i> Dashboard</a>
       <a class="nav-link-side {% if request.resolver_match.app_name == 'employees' %}active{% endif %}" href="{% url 'employees:list' %}">
         <i class="bi bi-people"></i> Employees</a>
@@ -107,7 +107,7 @@
     <div class="content">
       {% if messages %}
         {% for message in messages %}
-          <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show py-2" role="alert">
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show py-2" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           </div>

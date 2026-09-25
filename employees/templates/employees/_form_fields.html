@@ -1,0 +1,22 @@
+{# Shared field renderer for the employee add/edit modals. Expects: form #}
+{% if form.non_field_errors %}
+  <div class="alert alert-danger py-2 small mb-3">{{ form.non_field_errors }}</div>
+{% endif %}
+<div class="row g-3">
+  {% for field in form %}
+    <div class="{% if field.name in 'first_name,last_name,emp_id,hire_date,base_salary,allowance_monthly,dependents,department,position,contract_type' %}col-md-6{% else %}col-md-6{% endif %}">
+      {% if field.field.widget.input_type == 'checkbox' %}
+        <div class="form-check">
+          {{ field }}
+          <label class="form-check-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        </div>
+      {% else %}
+        <label class="form-label small fw-semibold mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      {% endif %}
+      {% for error in field.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
