@@ -1,4 +1,4 @@
-# Payroll KH — Payroll Management System
+# Payroll KH
 
 A Django web application for monthly payroll processing in Cambodia:
 employee records, automatic salary calculation using Cambodian NSSF and
@@ -8,23 +8,28 @@ Built as the final project for the Python course.
 
 ## Features
 
-- **Employee management** — CRUD with search; salary, allowances, dependants,
+- **Employee management**: CRUD with search; salary, allowances, dependants,
   NSSF/residency flags, contract type (modal-based UI).
-- **Payroll engine** — pure `Decimal` calculations with unit tests:
+- **Payroll engine**: pure `Decimal` calculations with unit tests:
   - Progressive monthly salary tax (0% / 5% / 10% / 15% / 20%, marginal)
   - NSSF: 2% employee (pension), 5.4% employer (occupational risk + health + pension)
   - Dependant allowance: KHR 150,000 per dependant per month
   - Non-residents: flat 20%
-- **Monthly payroll runs** — one click generates a payslip per active employee;
+- **Monthly payroll runs**: one click generates a payslip per active employee;
   edit overtime / bonus / advances while the run is a draft; **finalize** locks it.
-- **Printable payslips** — A4 layout, earnings/deductions breakdown, employer
+- **Printable payslips**: A4 layout, earnings/deductions breakdown, employer
   contributions, print-to-PDF via the browser.
-- **Dashboard** — headcount, latest run totals, GDT withholding-tax deadline.
-- **Authentication** — login required for every page.
+- **Dashboard**: headcount, latest run totals, GDT withholding-tax deadline,
+  recent payroll runs.
+- **Authentication**: login required for every page.
+- **Responsive**: off-canvas navigation and 44px touch targets on small screens.
 
 ## Tech stack
 
-Python 3.11 · Django 5.2 · SQLite · Bootstrap 5 (CDN) · Sora + Jakarta Sans fonts
+Python 3.11 · Django 5.2 · SQLite · Bootstrap 5 (CDN) · IBM Plex Sans (Google Fonts)
+
+Design direction lives in [DESIGN.md](DESIGN.md): emerald accent, IBM Plex Sans,
+dials ENERGY 1 / RHYTHM 2 / MOTION 1.
 
 ## Quick start
 
@@ -43,7 +48,7 @@ Open http://127.0.0.1:8000/ and sign in:
 |----------|----------|
 | `hr` | `payroll2026` |
 
-*(Demo credentials for local coursework use only — do not deploy publicly.)*
+*(Demo credentials for local coursework use only. Do not deploy publicly.)*
 
 ## Run the tests
 
@@ -58,12 +63,12 @@ payslip math, CRUD, run generation, finalize locking, payslip rendering.
 
 | Rule | Value | Source |
 |------|-------|--------|
-| Resident salary tax (monthly, marginal) | 0% ≤ 1,500,000 · 5% ≤ 2,000,000 · 10% ≤ 8,500,000 · 15% ≤ 12,500,000 · 20% above | [PwC Tax Summaries — Cambodia, individual](https://taxsummaries.pwc.com/cambodia/individual/taxes-on-personal-income) |
+| Resident salary tax (monthly, marginal) | 0% ≤ 1,500,000 · 5% ≤ 2,000,000 · 10% ≤ 8,500,000 · 15% ≤ 12,500,000 · 20% above | [PwC: taxes on personal income](https://taxsummaries.pwc.com/cambodia/individual/taxes-on-personal-income) |
 | Non-resident salary tax | 20% flat | same |
-| Dependant allowance | KHR 150,000/month per dependant | [PwC — deductions](https://taxsummaries.pwc.com/cambodia/individual/deductions) |
-| NSSF employee | 2% (old-age pension, first stage) | [PwC — other taxes](https://taxsummaries.pwc.com/cambodia/individual/other-taxes) |
+| Dependant allowance | KHR 150,000/month per dependant | [PwC: deductions](https://taxsummaries.pwc.com/cambodia/individual/deductions) |
+| NSSF employee | 2% (old-age pension, first stage) | [PwC: other taxes](https://taxsummaries.pwc.com/cambodia/individual/other-taxes) |
 | NSSF employer | 5.4% (0.8% occupational risk + 2.6% health + 2.0% pension) | same |
-| Tax remittance deadline | 20th of the following month | [PwC — tax administration](https://taxsummaries.pwc.com/cambodia/individual/tax-administration) |
+| Tax remittance deadline | 20th of the following month | [PwC: tax administration](https://taxsummaries.pwc.com/cambodia/individual/tax-administration) |
 
 All rates live in **`payroll/rules.py`** with their sources documented.
 
@@ -85,7 +90,7 @@ Employer NSSF (5.4%)   =   118,800
 
 - **Seniority accrual** is a simplified memo calculation (15 days of base wage
   per year of service, accrued monthly). It is labelled on the payslip and is
-  *not* a legal determination — verify against the applicable Prakas before any
+  *not* a legal determination. Verify against the applicable Prakas before any
   real-world use.
 - No NSSF contributory-wage ceiling is applied (ceiling not verified for this
   project).
@@ -96,6 +101,9 @@ Employer NSSF (5.4%)   =   118,800
 
 ```
 ├── manage.py
+├── DESIGN.md               # design direction (owner-authored)
+├── AGENTS.md               # antislop pointer for AI coding agents
+├── anti-slop/              # audit reports
 ├── payroll_project/        # settings, urls
 ├── core/                   # dashboard + seed_demo command
 ├── employees/              # Employee model, CRUD views, tests

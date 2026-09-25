@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.shortcuts import render
 
 from employees.models import Employee
@@ -27,6 +27,8 @@ def index(request):
             'active_employees': Employee.objects.filter(is_active=True).count(),
             'employee_total': Employee.objects.count(),
             'run_summary': run_summary,
-            'run_count': PayrollRun.objects.count(),
+            'recent_runs': PayrollRun.objects.annotate(
+                headcount=Count('payslips'), net_total=Sum('payslips__net')
+            )[:5],
         },
     )

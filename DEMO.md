@@ -3,60 +3,65 @@
 **Setup before the demo** (once):
 ```bash
 source .venv/bin/activate
-python manage.py seed_demo     # already run — safe to re-run any time
+python manage.py seed_demo     # already run; safe to re-run any time
 python manage.py runserver
 ```
-Open http://127.0.0.1:8000/ → login `hr` / `payroll2026`.
+Open http://127.0.0.1:8000/ and sign in with `hr` / `payroll2026`.
 
 ---
 
 ## Walkthrough
 
-1. **Dashboard (30 s)** — headcount 8, latest run September 2026,
-   gross 40,650,000 KHR, tax withheld with the GDT due date (20 Oct 2026).
+1. **Dashboard (30 s)**: headcount 8, latest run September 2026,
+   gross 40,650,000 KHR, tax withheld with the GDT due date (20 Oct 2026),
+   recent-runs list.
 
-2. **Employees (60 s)** — search "manager", open **Add Employee** modal
+2. **Employees (60 s)**: search "manager", open the **Add Employee** modal
    (show the form: salary, dependants, NSSF flags), edit EMP001's allowance,
-   mention delete confirm modal. Point out KHR formatting.
+   mention the delete confirm modal. Point out KHR formatting.
 
-3. **Payroll runs (90 s)** — Payroll Runs list shows Aug (finalized) and
+3. **Payroll runs (90 s)**: the Payroll Runs list shows Aug (finalized) and
    Sep (draft) with totals. Open **September**:
    - Totals cards: gross / NSSF / tax withheld / net / employer cost
-   - Banner: *"salary tax must be paid to GDT by 20 Oct 2026"*
+   - Banner: "salary tax must be paid to GDT by 20 Oct 2026"
 
-4. **The engine (90 s)** — in the Sep table, open **Extras** for EMP001,
-   set Overtime `150000` → **Recalculate**. Net updates to 2,277,700.
+4. **The engine (90 s)**: in the Sep table, open **Extras** for EMP001,
+   set Overtime to `150000` and **Recalculate**. Net updates to 2,277,700.
    Then hand-verify on screen:
    ```
-   gross 2,350,000 − NSSF 47,000 (2%) − tax 25,300 = net 2,277,700
-   taxable 2,003,000 → 25,000 (5% band) + 3,000×10% = 25,300
+   gross 2,350,000 - NSSF 47,000 (2%) - tax 25,300 = net 2,277,700
+   taxable 2,003,000 -> 25,000 (5% band) + 3,000 x 10% = 25,300
    ```
 
-5. **Payslip (60 s)** — open EMP001's payslip, show the breakdown
+5. **Payslip (60 s)**: open EMP001's payslip, show the breakdown
    (earnings, deductions, employer contributions, seniority memo),
    click **Print / Save PDF** to show the A4 layout.
 
-6. **Finalize (30 s)** — back to September → **Finalize run** →
-   status flips to green, edit buttons disappear (locked), success
-   message shows the GDT deadline.
+6. **Finalize (30 s)**: back to September, **Finalize run**, status flips to
+   green, edit buttons disappear (locked), success message shows the GDT
+   deadline.
 
-7. **If asked about tests** — `python manage.py test` → 33 tests,
+7. **If asked about tests**: `python manage.py test` shows 33 tests,
    including hand-computed tax band boundaries.
+
+8. **If asked about design**: `DESIGN.md` holds the direction (emerald accent,
+   IBM Plex Sans, ENERGY 1 / RHYTHM 2 / MOTION 1); `anti-slop/` holds the
+   audit report from the antislop quality pass.
 
 ---
 
 ## Talking points
 
 - All tax/NSSF rates sourced from PwC Tax Summaries (Cambodia), 2026-09-25.
-- Seniority accrual = simplified academic model, clearly labeled on payslip.
-- Money is `Decimal` throughout — no floating point.
-- Design: Sora/Jakarta typography, compact layout, modal CRUD.
+- Seniority accrual is a simplified academic model, clearly labelled on the payslip.
+- Money is `Decimal` throughout, no floating point.
+- Responsive off-canvas navigation, Escape closes modals, AA contrast verified.
 
 ## Submission checklist
 
-- [ ] `python manage.py test` → 33 OK (run once right before submitting)
-- [ ] `python manage.py seed_demo && python manage.py runserver` → demo works
+- [ ] `python manage.py test` shows 33 OK (run once right before submitting)
+- [ ] `python manage.py seed_demo && python manage.py runserver` demo works
 - [ ] Screenshots added to README (dashboard, employees, run detail, payslip)
 - [ ] Demo video recorded (5 min, follow this script)
-- [ ] Zip source: exclude `.venv/` (`db.sqlite3` optional — seed recreates it)
-- [ ] Git history: 6 clean commits, no secrets
+- [ ] Zip source: exclude `.venv/` (`db.sqlite3` optional, seed recreates it)
+- [ ] Git history: clean commits, no secrets

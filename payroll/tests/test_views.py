@@ -1,4 +1,4 @@
-"""Phase 3 tests: run generation, totals, extras editing, finalize lock."""
+"""Tests for run views: generation, totals, extras editing, finalize lock."""
 from datetime import date
 from decimal import Decimal
 

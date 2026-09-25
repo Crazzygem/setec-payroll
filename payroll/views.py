@@ -42,7 +42,7 @@ def run_create(request):
         if created:
             count = run.payslips.count()
             messages.success(
-                request, f'{run.period_label} payroll generated — {count} payslips.'
+                request, f'{run.period_label} payroll generated: {count} payslips.'
             )
         else:
             messages.error(request, f'{run.period_label} payroll already exists.')
@@ -87,7 +87,7 @@ def run_detail(request, pk):
 def payslip_update(request, payslip_pk):
     payslip = get_object_or_404(Payslip, pk=payslip_pk)
     if not payslip.run.is_draft:
-        messages.error(request, 'This run is finalized — payslips are locked.')
+        messages.error(request, 'This run is finalized. Payslips are locked.')
         return redirect('payroll:run_detail', pk=payslip.run_id)
     form = PayslipExtrasForm(request.POST, instance=payslip)
     if form.is_valid():
@@ -96,7 +96,7 @@ def payslip_update(request, payslip_pk):
         slip.save()
         messages.success(request, f'Payslip for {slip.employee.emp_id} recalculated.')
     else:
-        messages.error(request, 'Could not update payslip — check the values.')
+        messages.error(request, 'Could not update payslip, check the values.')
     return redirect('payroll:run_detail', pk=payslip.run_id)
 
 
@@ -120,7 +120,7 @@ def run_finalize(request, pk):
 
 @login_required
 def payslip_view(request, payslip_pk):
-    """Standalone printable payslip (no sidebar — clean A4 print)."""
+    """Standalone printable payslip (no sidebar, clean A4 print)."""
     payslip = get_object_or_404(
         Payslip.objects.select_related('employee', 'run'), pk=payslip_pk
     )

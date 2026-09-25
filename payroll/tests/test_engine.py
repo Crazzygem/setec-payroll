@@ -1,4 +1,4 @@
-"""Tests for the payroll engine — written FIRST (TDD), hand-computed expectations."""
+"""Tests for the payroll engine, written FIRST (TDD), hand-computed expectations."""
 from decimal import Decimal
 
 from django.test import SimpleTestCase

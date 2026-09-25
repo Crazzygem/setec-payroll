@@ -7,22 +7,23 @@
   <title>{% block title %}Dashboard{% endblock %} · Payroll KH</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <style>
     :root {
-      --accent: #4f46e5;
-      --accent-soft: #eef2ff;
+      --accent: #059669;          /* emerald 600: graphics, icons, borders */
+      --accent-strong: #047857;   /* emerald 700: any surface carrying white text (5.48:1) */
+      --accent-soft: #ecfdf5;
       --sidebar-bg: #111827;
       --sidebar-text: #9ca3af;
     }
     body {
-      font-family: 'Jakarta Sans', sans-serif;
+      font-family: 'IBM Plex Sans', sans-serif;
       background: #f8fafc;
       font-size: 0.9rem;
     }
-    h1, h2, h3, h4, h5, h6, .brand { font-family: 'Sora', sans-serif; }
+    h1, h2, h3, h4, h5, h6, .brand { font-family: 'IBM Plex Sans', sans-serif; }
     .sidebar {
       width: 232px;
       min-height: 100vh;
@@ -51,7 +52,7 @@
       text-decoration: none;
     }
     .nav-link-side:hover { color: #fff; background: rgba(255,255,255,0.06); }
-    .nav-link-side.active { color: #fff; background: var(--accent); }
+    .nav-link-side.active { color: #fff; background: var(--accent-strong); }
     .topbar {
       background: #fff;
       border-bottom: 1px solid #e5e7eb;
@@ -64,12 +65,47 @@
     .content { padding: 1.5rem; }
     .card { border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
     .stat-card .stat-label { color: #6b7280; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
-    .stat-card .stat-value { font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 700; }
+    .stat-card .stat-value { font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+    .table { font-variant-numeric: tabular-nums; }
     .table > :not(caption) > * > * { padding: 0.55rem 0.75rem; }
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { background: #4338ca; color: #fff; }
+    .btn-accent { background: var(--accent-strong); color: #fff; }
+    .btn-accent:hover { background: #065f46; color: #fff; }
     .page-title { font-size: 1.25rem; font-weight: 700; }
     .modal-content { border: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+
+    /* Small screens: sidebar becomes an off-canvas drawer (R-03) */
+    @media (max-width: 767.98px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        overflow-y: auto;
+        z-index: 1040;
+        transform: translateX(-100%);
+        transition: transform 0.15s ease;
+      }
+      body.sidebar-open .sidebar { transform: translateX(0); }
+      body.sidebar-open::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 1030;
+      }
+      .content { padding: 1rem; }
+      .topbar { padding: 0.6rem 1rem; }
+    }
+    /* Touch devices: minimum 44px tap targets (R-03) */
+    @media (pointer: coarse) {
+      .btn, .nav-link-side {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav-link-side { display: flex; justify-content: flex-start; }
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
@@ -92,7 +128,13 @@
 
   <main>
     <div class="topbar">
-      <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+      <div class="d-flex align-items-center">
+        <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-2 d-md-none"
+                type="button" aria-label="Open menu" aria-expanded="false">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+      </div>
       <div class="d-flex align-items-center gap-3">
         {% if user.is_authenticated %}
           <span class="text-muted small"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
@@ -118,6 +160,36 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  (function () {
+    var toggle = document.getElementById('sidebarToggle');
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var open = document.body.classList.toggle('sidebar-open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.body.addEventListener('click', function (e) {
+        if (e.target === document.body && document.body.classList.contains('sidebar-open')) {
+          document.body.classList.remove('sidebar-open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var modal = document.querySelector('.modal.show.d-block');
+      if (modal) {
+        var close = modal.querySelector('.btn-close');
+        if (close) close.click();
+        return;
+      }
+      if (document.body.classList.contains('sidebar-open')) {
+        document.body.classList.remove('sidebar-open');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  })();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

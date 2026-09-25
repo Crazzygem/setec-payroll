@@ -50,7 +50,7 @@ class Command(BaseCommand):
     help = 'Seed demo data: 8 employees, Aug-2026 finalized run, Sep-2026 draft run.'
 
     def handle(self, *args, **options):
-        # Clear (runs first — payslips PROTECT employees)
+        # Clear (runs first: payslips PROTECT employees)
         deleted_runs = PayrollRun.objects.count()
         PayrollRun.objects.all().delete()
         deleted_emps = Employee.objects.count()
@@ -63,7 +63,6 @@ class Command(BaseCommand):
         user.set_password(DEMO_PASSWORD)
         user.save()
 
-        # August: finalized run
         aug, _ = generate_run(2026, 8)
         aug.status = PayrollRun.STATUS_FINALIZED
         aug.finalized_at = timezone.now()

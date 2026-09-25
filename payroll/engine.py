@@ -1,4 +1,4 @@
-"""Pure payroll calculation functions. No Django, no I/O — unit-tested directly.
+"""Pure payroll calculation functions. No Django, no I/O, unit-tested directly.
 
 All money is Decimal, quantized to whole KHR (ROUND_HALF_UP) at the payslip
 field level. See payroll/rules.py for every rate and its source.
