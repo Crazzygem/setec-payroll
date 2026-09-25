@@ -19,6 +19,8 @@ Built as the final project for the Python course.
   edit overtime / bonus / advances while the run is a draft; **finalize** locks it.
 - **Printable payslips**: A4 layout, earnings/deductions breakdown, employer
   contributions, print-to-PDF via the browser.
+- **Export**: download any run as CSV or formatted Excel (.xlsx) with a totals
+  row; money cells are real numbers with `#,##0` formatting (pandas + openpyxl).
 - **Dashboard**: headcount, latest run totals, GDT withholding-tax deadline,
   recent payroll runs.
 - **Authentication**: login required for every page.
@@ -26,7 +28,7 @@ Built as the final project for the Python course.
 
 ## Tech stack
 
-Python 3.11 · Django 5.2 · SQLite · Bootstrap 5 (CDN) · IBM Plex Sans (Google Fonts)
+Python 3.11 · Django 5.2 · SQLite · pandas + openpyxl (exports) · Bootstrap 5 (CDN) · IBM Plex Sans (Google Fonts)
 
 Design direction lives in [DESIGN.md](DESIGN.md): emerald accent, IBM Plex Sans,
 dials ENERGY 1 / RHYTHM 2 / MOTION 1.

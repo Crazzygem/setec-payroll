@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from . import exports
 from .forms import PayslipExtrasForm, RunCreateForm
 from .models import PayrollRun, Payslip
 from .services import apply_payslip_math, generate_run
@@ -119,6 +121,35 @@ def run_finalize(request, pk):
         f'paid to GDT by {due}.',
     )
     return redirect('payroll:run_detail', pk=run.pk)
+
+
+@login_required
+def export_csv(request, pk):
+    """Download the run as CSV (UTF-8 BOM so Excel opens it cleanly)."""
+    run = get_object_or_404(PayrollRun, pk=pk)
+    data = exports.run_csv(run).encode("utf-8-sig")
+    response = HttpResponse(data, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = (
+        f'attachment; filename="payroll_{run.year}-{run.month:02d}.csv"'
+    )
+    return response
+
+
+@login_required
+def export_xlsx(request, pk):
+    """Download the run as a formatted Excel workbook."""
+    run = get_object_or_404(PayrollRun, pk=pk)
+    data = exports.run_xlsx(run)
+    response = HttpResponse(
+        data,
+        content_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ),
+    )
+    response["Content-Disposition"] = (
+        f'attachment; filename="payroll_{run.year}-{run.month:02d}.xlsx"'
+    )
+    return response
 
 
 @login_required

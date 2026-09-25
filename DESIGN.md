@@ -56,5 +56,6 @@ to be scanned, verified, and printed.
 
 Bootstrap Icons, chosen for content relevance (reason recorded per R-31):
 bi-speedometer2 = Dashboard, bi-people = Employees, bi-cash-stack = Payroll
-runs, bi-wallet2 = product brand (a payroll system holds money). No decorative
-icons, no emoji.
+runs, bi-wallet2 = product brand (a payroll system holds money), bi-filetype-csv
+and bi-file-earmark-spreadsheet = the run export buttons (file formats they
+download). No decorative icons, no emoji.

@@ -17,6 +17,12 @@
   <div class="d-flex gap-2">
     <a class="btn btn-sm btn-outline-secondary" href="{% url 'payroll:run_list' %}">
       <i class="bi bi-arrow-left"></i> All runs</a>
+    <a class="btn btn-sm btn-outline-secondary"
+       href="{% url 'payroll:export_csv' run.pk %}">
+      <i class="bi bi-filetype-csv"></i> Export CSV</a>
+    <a class="btn btn-sm btn-outline-secondary"
+       href="{% url 'payroll:export_xlsx' run.pk %}">
+      <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel</a>
     {% if run.status == 'DRAFT' %}
       <form method="post" action="{% url 'payroll:run_finalize' run.pk %}"
             onsubmit="return confirm('Finalize {{ run.period_label }} payroll? Payslips will be locked.')">
