@@ -65,6 +65,7 @@ def employee_list(request):
     return _render_list(request)
 
 
+@login_required
 @require_POST
 def employee_create(request):
     form = EmployeeForm(request.POST)
@@ -88,6 +89,7 @@ def employee_edit(request, pk):
     return redirect('employees:list')
 
 
+@login_required
 @require_POST
 def employee_delete(request, pk):
     target = get_object_or_404(Employee, pk=pk)

@@ -99,3 +99,13 @@ class EmployeeCrudTests(TestCase):
         response = self.client.get(reverse('employees:delete', args=[employee.pk]))
         self.assertEqual(response.status_code, 405)
         self.assertTrue(Employee.objects.filter(pk=employee.pk).exists())
+
+    def test_post_endpoints_require_login(self):
+        employee = make_employee()
+        self.client.logout()
+        response = self.client.post(reverse('employees:create'), {'emp_id': 'EMP999'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Employee.objects.filter(emp_id='EMP999').exists())
+        response = self.client.post(reverse('employees:delete', args=[employee.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Employee.objects.filter(pk=employee.pk).exists())

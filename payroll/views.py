@@ -32,6 +32,7 @@ def run_list(request):
     return _render_run_list(request)
 
 
+@login_required
 @require_POST
 def run_create(request):
     form = RunCreateForm(request.POST)
@@ -83,6 +84,7 @@ def run_detail(request, pk):
     )
 
 
+@login_required
 @require_POST
 def payslip_update(request, payslip_pk):
     payslip = get_object_or_404(Payslip, pk=payslip_pk)
@@ -100,6 +102,7 @@ def payslip_update(request, payslip_pk):
     return redirect('payroll:run_detail', pk=payslip.run_id)
 
 
+@login_required
 @require_POST
 def run_finalize(request, pk):
     run = get_object_or_404(PayrollRun, pk=pk)

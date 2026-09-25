@@ -130,3 +130,29 @@ class PayrollRunTests(TestCase):
         for url_name in ('payroll:run_list',):
             response = self.client.get(reverse(url_name))
             self.assertEqual(response.status_code, 302)
+
+    def test_post_endpoints_require_login(self):
+        make_employee()
+        self.generate()
+        run = PayrollRun.objects.get()
+        slip = run.payslips.get()
+        self.client.logout()
+
+        response = self.client.post(
+            reverse('payroll:run_create'), {'year': 2026, 'month': 12}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(PayrollRun.objects.filter(year=2026, month=12).exists())
+
+        response = self.client.post(reverse('payroll:run_finalize', args=[run.pk]))
+        self.assertEqual(response.status_code, 302)
+        run.refresh_from_db()
+        self.assertEqual(run.status, PayrollRun.STATUS_DRAFT)
+
+        response = self.client.post(
+            reverse('payroll:payslip_update', args=[slip.pk]),
+            {'overtime': 100000, 'bonus': 0, 'advances': 0},
+        )
+        self.assertEqual(response.status_code, 302)
+        slip.refresh_from_db()
+        self.assertEqual(slip.overtime, Decimal('0'))
