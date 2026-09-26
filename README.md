@@ -36,9 +36,6 @@ Built as the final project for the Python course.
 
 Python 3.11 · Django 5.2 · SQLite · pandas + openpyxl (exports) · Bootstrap 5 (CDN) · IBM Plex Sans (Google Fonts)
 
-Design direction lives in [DESIGN.md](DESIGN.md): emerald accent, IBM Plex Sans,
-dials ENERGY 1 / RHYTHM 2 / MOTION 1.
-
 ## Quick start
 
 ```bash
@@ -109,9 +106,6 @@ Employer NSSF (5.4%)   =   118,800
 
 ```
 ├── manage.py
-├── DESIGN.md               # design direction (owner-authored)
-├── AGENTS.md               # antislop pointer for AI coding agents
-├── anti-slop/              # audit reports
 ├── payroll_project/        # settings, urls
 ├── core/                   # dashboard + seed_demo command
 ├── employees/              # Employee/Department/Position models, CRUD views, tests

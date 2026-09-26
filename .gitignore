@@ -11,3 +11,12 @@ staticfiles/
 # OS / editor
 .DS_Store
 *.swp
+
+# AI / assistant artifacts
+.hermes/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+DESIGN.md
+DEMO.md
+anti-slop/
