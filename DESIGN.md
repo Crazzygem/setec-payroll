@@ -58,4 +58,7 @@ Bootstrap Icons, chosen for content relevance (reason recorded per R-31):
 bi-speedometer2 = Dashboard, bi-people = Employees, bi-cash-stack = Payroll
 runs, bi-wallet2 = product brand (a payroll system holds money), bi-filetype-csv
 and bi-file-earmark-spreadsheet = the run export buttons (file formats they
-download). No decorative icons, no emoji.
+download), bi-diagram-3 = Departments (org-chart structure), bi-briefcase
+= Positions (job titles). The sidebar group label marks the Organization nav
+section, same uppercase treatment as stat labels (hierarchy). No decorative
+icons, no emoji.

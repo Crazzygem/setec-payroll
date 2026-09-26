@@ -8,8 +8,11 @@ Built as the final project for the Python course.
 
 ## Features
 
-- **Employee management**: CRUD with search; salary, allowances, dependants,
-  NSSF/residency flags, contract type (modal-based UI).
+- **Employee management**: CRUD with search; click a table row to edit; salary,
+  allowances, dependants, NSSF/residency flags, contract type (modal UI).
+- **Organization**: departments and job titles managed in-app under the
+  Organization sidebar group; the employee form picks from those dropdowns,
+  and a list item still in use cannot be deleted.
 - **Payroll engine**: pure `Decimal` calculations with unit tests:
   - Progressive monthly salary tax (0% / 5% / 10% / 15% / 20%, marginal)
   - NSSF: 2% employee (pension), 5.4% employer (occupational risk + health + pension)
@@ -58,7 +61,7 @@ Open http://127.0.0.1:8000/ and sign in:
 python manage.py test
 ```
 
-33 tests: payroll-engine band boundaries (hand-computed expectations),
+46 tests: payroll-engine band boundaries (hand-computed expectations),
 payslip math, CRUD, run generation, finalize locking, payslip rendering.
 
 ## Calculation rules and sources
@@ -108,13 +111,13 @@ Employer NSSF (5.4%)   =   118,800
 ├── anti-slop/              # audit reports
 ├── payroll_project/        # settings, urls
 ├── core/                   # dashboard + seed_demo command
-├── employees/              # Employee model, CRUD views, tests
+├── employees/              # Employee/Department/Position models, CRUD views, tests
 ├── payroll/
 │   ├── rules.py            # all rates & assumptions (with sources)
 │   ├── engine.py           # pure calculation functions
 │   ├── services.py         # run generation, payslip recalculation
 │   ├── models.py           # PayrollRun, Payslip
 │   ├── views.py            # runs, extras editing, finalize, payslip print
-│   └── tests/              # engine + view tests (33 total)
+│   └── tests/              # engine + view tests (46 total incl. employees + exports)
 └── templates/              # base layout, login
 ```

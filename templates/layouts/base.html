@@ -53,6 +53,14 @@
     }
     .nav-link-side:hover { color: #fff; background: rgba(255,255,255,0.06); }
     .nav-link-side.active { color: #fff; background: var(--accent-strong); }
+    .nav-group-label {
+      color: var(--sidebar-text);
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 1rem 0.75rem 0.35rem;
+    }
     .topbar {
       background: #fff;
       border-bottom: 1px solid #e5e7eb;
@@ -116,10 +124,15 @@
     <nav class="nav flex-column gap-1">
       <a class="nav-link-side {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">
         <i class="bi bi-speedometer2"></i> Dashboard</a>
-      <a class="nav-link-side {% if request.resolver_match.app_name == 'employees' %}active{% endif %}" href="{% url 'employees:list' %}">
-        <i class="bi bi-people"></i> Employees</a>
       <a class="nav-link-side {% if request.resolver_match.app_name == 'payroll' %}active{% endif %}" href="{% url 'payroll:run_list' %}">
         <i class="bi bi-cash-stack"></i> Payroll Runs</a>
+      <div class="nav-group-label">Organization</div>
+      <a class="nav-link-side {% if request.resolver_match.app_name == 'employees' and 'departments/' not in request.path and 'positions/' not in request.path %}active{% endif %}" href="{% url 'employees:list' %}">
+        <i class="bi bi-people"></i> Employees</a>
+      <a class="nav-link-side {% if 'departments/' in request.path %}active{% endif %}" href="{% url 'employees:department_list' %}">
+        <i class="bi bi-diagram-3"></i> Departments</a>
+      <a class="nav-link-side {% if 'positions/' in request.path %}active{% endif %}" href="{% url 'employees:position_list' %}">
+        <i class="bi bi-briefcase"></i> Positions</a>
     </nav>
     <div class="mt-auto px-2 small" style="color:var(--sidebar-text)">
       <i class="bi bi-shield-check"></i> HR Admin

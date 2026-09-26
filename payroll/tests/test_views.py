@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from employees.models import Employee
+from employees.models import Department, Employee, Position
 
 from ..models import PayrollRun, Payslip
 
@@ -18,6 +18,10 @@ def make_employee(**overrides):
         'base_salary': 2000000,
     }
     defaults.update(overrides)
+    for field in ('position', 'department'):
+        if isinstance(defaults[field], str):
+            model = Position if field == 'position' else Department
+            defaults[field], _ = model.objects.get_or_create(name=defaults[field])
     return Employee.objects.create(**defaults)
 
 

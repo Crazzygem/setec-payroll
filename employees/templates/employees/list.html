@@ -2,6 +2,9 @@
 {% load humanize %}
 {% block title %}Employees{% endblock %}
 {% block page_title %}Employees{% endblock %}
+{% block extra_css %}
+tbody tr[data-href] { cursor: pointer; }
+{% endblock %}
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
@@ -27,13 +30,14 @@
           <th>ID</th><th>Name</th><th>Position</th><th>Department</th>
           <th>Contract</th><th class="text-end">Base salary</th>
           <th class="text-center">Depend.</th><th class="text-center">Status</th>
-          <th class="text-end">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for e in employees %}
-        <tr>
-          <td class="fw-semibold">{{ e.emp_id }}</td>
+        <tr data-href="?edit={{ e.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">
+          <td class="fw-semibold">
+            <a href="?edit={{ e.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ e.emp_id }}</a>
+          </td>
           <td>{{ e.full_name }}</td>
           <td>{{ e.position }}</td>
           <td>{{ e.department }}</td>
@@ -53,16 +57,10 @@
               <span class="badge text-bg-light text-muted">Inactive</span>
             {% endif %}
           </td>
-          <td class="text-end text-nowrap">
-            <a class="btn btn-sm btn-outline-secondary py-0"
-               href="?edit={{ e.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">Edit</a>
-            <a class="btn btn-sm btn-outline-danger py-0"
-               href="?delete={{ e.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">Delete</a>
-          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" class="text-center text-muted py-4">
+          <td colspan="8" class="text-center text-muted py-4">
             No employees yet. <a href="?new=1">Add the first one</a>.
           </td>
         </tr>
@@ -112,8 +110,13 @@
           {% include 'employees/_form_fields.html' %}
         </div>
         <div class="modal-footer py-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}">Cancel</a>
-          <button class="btn btn-accent btn-sm" type="submit">Save changes</button>
+          <a class="btn btn-sm btn-outline-danger"
+             href="?delete={{ target.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">
+            <i class="bi bi-trash3"></i> Delete</a>
+          <div class="ms-auto d-flex gap-2">
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}">Cancel</a>
+            <button class="btn btn-accent btn-sm" type="submit">Save changes</button>
+          </div>
         </div>
       </form>
     </div>
@@ -148,4 +151,15 @@
 <div class="modal-backdrop fade show"></div>
 {% endif %}
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('tr[data-href]').forEach(function (row) {
+    row.addEventListener('click', function (e) {
+      if (e.target.closest('a, button')) return;
+      window.location = row.dataset.href;
+    });
+  });
+</script>
 {% endblock %}

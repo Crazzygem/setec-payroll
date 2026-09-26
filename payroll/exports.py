@@ -29,12 +29,12 @@ MONEY_FORMAT = "#,##0"
 def run_dataframe(run):
     """One row per payslip plus a TOTAL row, labelled columns, int money."""
     rows = []
-    for slip in run.payslips.select_related("employee"):
+    for slip in run.payslips.select_related("employee__department", "employee__position"):
         row = {
             "emp_id": slip.employee.emp_id,
             "name": slip.employee.full_name,
-            "position": slip.employee.position,
-            "department": slip.employee.department,
+            "position": slip.employee.position.name,
+            "department": slip.employee.department.name,
         }
         for key in MONEY_COLUMNS:
             row[key] = int(getattr(slip, key))

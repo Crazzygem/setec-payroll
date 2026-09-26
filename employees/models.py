@@ -2,6 +2,28 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
+class Department(models.Model):
+    """A named department employees belong to; deletion blocked while in use."""
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Position(models.Model):
+    """A job title employees hold; deletion blocked while in use."""
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Employee(models.Model):
     """An employee record with everything the payroll engine needs."""
 
@@ -12,8 +34,12 @@ class Employee(models.Model):
     emp_id = models.CharField('Employee ID', max_length=10, unique=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    position = models.CharField(max_length=100)
-    department = models.CharField(max_length=100)
+    position = models.ForeignKey(
+        Position, on_delete=models.PROTECT, related_name='employees'
+    )
+    department = models.ForeignKey(
+        Department, on_delete=models.PROTECT, related_name='employees'
+    )
     hire_date = models.DateField()
     contract_type = models.CharField(
         max_length=12,

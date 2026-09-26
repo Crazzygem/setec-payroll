@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from employees.models import Employee
+from employees.models import Department, Employee, Position
 from payroll.models import PayrollRun
 from payroll.services import apply_payslip_math, generate_run
 
@@ -57,7 +57,12 @@ class Command(BaseCommand):
         Employee.objects.all().delete()
 
         for data in EMPLOYEES:
-            Employee.objects.create(**data)
+            data = dict(data)
+            department, _ = Department.objects.get_or_create(
+                name=data.pop('department')
+            )
+            position, _ = Position.objects.get_or_create(name=data.pop('position'))
+            Employee.objects.create(department=department, position=position, **data)
 
         user, _ = User.objects.get_or_create(username=DEMO_USERNAME)
         user.set_password(DEMO_PASSWORD)

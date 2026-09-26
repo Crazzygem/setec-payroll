@@ -16,9 +16,11 @@ Open http://127.0.0.1:8000/ and sign in with `hr` / `payroll2026`.
    gross 40,650,000 KHR, tax withheld with the GDT due date (20 Oct 2026),
    recent-runs list.
 
-2. **Employees (60 s)**: search "manager", open the **Add Employee** modal
-   (show the form: salary, dependants, NSSF flags), edit EMP001's allowance,
-   mention the delete confirm modal. Point out KHR formatting.
+2. **Employees (60 s)**: search "manager", click a row to open the edit
+   modal (show the Department/Position dropdowns and Delete in the modal
+   footer), open Add Employee, edit EMP001's allowance. Then Organization →
+   Departments: add "Legal", show it in the employee dropdown, delete it
+   again. Point out KHR formatting.
 
 3. **Payroll runs (90 s)**: the Payroll Runs list shows Aug (finalized) and
    Sep (draft) with totals. Open **September**:
@@ -41,7 +43,7 @@ Open http://127.0.0.1:8000/ and sign in with `hr` / `payroll2026`.
    green, edit buttons disappear (locked), success message shows the GDT
    deadline.
 
-7. **If asked about tests**: `python manage.py test` shows 33 tests,
+7. **If asked about tests**: `python manage.py test` shows 46 tests,
    including hand-computed tax band boundaries.
 
 8. **If asked about design**: `DESIGN.md` holds the direction (emerald accent,
@@ -59,7 +61,7 @@ Open http://127.0.0.1:8000/ and sign in with `hr` / `payroll2026`.
 
 ## Submission checklist
 
-- [ ] `python manage.py test` shows 33 OK (run once right before submitting)
+- [ ] `python manage.py test` shows 46 OK (run once right before submitting)
 - [ ] `python manage.py seed_demo && python manage.py runserver` demo works
 - [ ] Screenshots added to README (dashboard, employees, run detail, payslip)
 - [ ] Demo video recorded (5 min, follow this script)

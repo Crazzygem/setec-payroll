@@ -1,7 +1,7 @@
 from django import forms
-from django.forms.widgets import CheckboxInput
+from django.forms.widgets import CheckboxInput, Select
 
-from .models import Employee
+from .models import Department, Employee, Position
 
 
 class EmployeeForm(forms.ModelForm):
@@ -22,9 +22,35 @@ class EmployeeForm(forms.ModelForm):
             widget = field.widget
             if isinstance(widget, CheckboxInput):
                 widget.attrs.setdefault('class', 'form-check-input')
+            elif isinstance(widget, Select):
+                widget.attrs.setdefault('class', 'form-select form-select-sm')
             else:
                 widget.attrs.setdefault('class', 'form-control form-control-sm')
             if name == 'emp_id':
                 widget.attrs.setdefault('placeholder', 'e.g. EMP001')
             elif name in ('base_salary', 'allowance_monthly'):
                 widget.attrs.setdefault('placeholder', 'KHR, e.g. 2000000')
+
+
+class DepartmentForm(forms.ModelForm):
+    class Meta:
+        model = Department
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(
+                attrs={'class': 'form-control form-control-sm',
+                       'placeholder': 'e.g. Accounting'}
+            ),
+        }
+
+
+class PositionForm(forms.ModelForm):
+    class Meta:
+        model = Position
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(
+                attrs={'class': 'form-control form-control-sm',
+                       'placeholder': 'e.g. Accountant'}
+            ),
+        }
