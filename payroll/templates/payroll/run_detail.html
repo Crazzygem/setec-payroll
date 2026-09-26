@@ -172,12 +172,6 @@
       {% endif %}
     </table>
   </div>
-  {% if run.is_draft and rows %}
-  <div class="card-body py-2 d-flex justify-content-end border-top">
-    <button class="btn btn-accent btn-sm" type="submit">
-      <i class="bi bi-calculator" aria-hidden="true"></i> Save and recalculate</button>
-  </div>
-  {% endif %}
 </div>
 {% if run.is_draft %}</form>{% endif %}
 
