@@ -198,21 +198,22 @@ class OrganizationTests(TestCase):
         self.assertTrue(Position.objects.filter(pk=in_use.pk).exists())
         self.assertContains(response, 'employees still use it')
 
-    def test_department_rows_expand_members_and_rename(self):
+    def test_department_row_opens_edit_modal_with_members(self):
         department = Department.objects.create(name='IT')
         make_employee()
         response = self.client.get(reverse('employees:department_list'))
-        self.assertContains(response, f'data-href="?show={department.pk}')
+        self.assertContains(response, f'data-href="?edit={department.pk}')
         self.assertNotContains(response, '>Actions<')
+        self.assertNotContains(response, 'org-bar')
 
-        # Expanded row lists the members, with rename and delete inside it
+        # The edit modal lists the members inside it
         response = self.client.get(
-            reverse('employees:department_list') + f'?show={department.pk}'
+            reverse('employees:department_list') + f'?edit={department.pk}'
         )
-        self.assertEqual(response.context['expanded'], department.pk)
+        self.assertEqual(response.context['modal'], 'edit')
         self.assertEqual([m.emp_id for m in response.context['members']], ['EMP001'])
+        self.assertContains(response, 'Employees in this department')
         self.assertContains(response, 'Dara')
-        self.assertContains(response, f'?edit={department.pk}')
         self.assertContains(response, f'?delete={department.pk}')
 
         response = self.client.post(
@@ -223,15 +224,16 @@ class OrganizationTests(TestCase):
         department.refresh_from_db()
         self.assertEqual(department.name, 'Information Tech')
 
-    def test_position_rows_expand_members_and_rename(self):
+    def test_position_row_opens_edit_modal_with_members(self):
         position = Position.objects.create(name='Analyst')
         response = self.client.get(reverse('employees:position_list'))
-        self.assertContains(response, f'data-href="?show={position.pk}')
+        self.assertContains(response, f'data-href="?edit={position.pk}')
+        self.assertNotContains(response, 'org-bar')
         response = self.client.get(
-            reverse('employees:position_list') + f'?show={position.pk}'
+            reverse('employees:position_list') + f'?edit={position.pk}'
         )
-        self.assertEqual(response.context['expanded'], position.pk)
-        self.assertContains(response, f'?edit={position.pk}')
+        self.assertEqual(response.context['modal'], 'edit')
+        self.assertContains(response, 'Employees in this position')
         response = self.client.post(
             reverse('employees:position_update', args=[position.pk]),
             {'name': 'Senior Analyst'},
@@ -253,10 +255,10 @@ class OrganizationTests(TestCase):
         self.assertEqual(len(response.context['items']), 0)
         self.assertContains(response, 'Clear the search')
 
-    def test_department_members_expansion_handles_empty_department(self):
+    def test_edit_modal_handles_empty_department(self):
         empty = Department.objects.create(name='Legal')
         response = self.client.get(
-            reverse('employees:department_list') + f'?show={empty.pk}'
+            reverse('employees:department_list') + f'?edit={empty.pk}'
         )
         self.assertEqual(response.context['members'], [])
         self.assertContains(response, 'No employees in this department')

@@ -45,31 +45,31 @@
   <div class="col-6 col-md">
     <div class="card stat-card"><div class="card-body py-2 px-3">
       <div class="stat-label">Gross payroll</div>
-      <div class="stat-value">{{ totals.gross|floatformat:0|intcomma }}</div>
+      <div class="stat-value">{{ totals.gross|floatformat:0|intcomma }} KHR</div>
     </div></div>
   </div>
   <div class="col-6 col-md">
     <div class="card stat-card"><div class="card-body py-2 px-3">
       <div class="stat-label">NSSF (employee)</div>
-      <div class="stat-value">{{ totals.nssf_employee|floatformat:0|intcomma }}</div>
+      <div class="stat-value">{{ totals.nssf_employee|floatformat:0|intcomma }} KHR</div>
     </div></div>
   </div>
   <div class="col-6 col-md">
     <div class="card stat-card"><div class="card-body py-2 px-3">
       <div class="stat-label">Salary tax withheld</div>
-      <div class="stat-value">{{ totals.tax|floatformat:0|intcomma }}</div>
+      <div class="stat-value">{{ totals.tax|floatformat:0|intcomma }} KHR</div>
     </div></div>
   </div>
   <div class="col-6 col-md">
     <div class="card stat-card"><div class="card-body py-2 px-3">
       <div class="stat-label">Net paid</div>
-      <div class="stat-value">{{ totals.net|floatformat:0|intcomma }}</div>
+      <div class="stat-value">{{ totals.net|floatformat:0|intcomma }} KHR</div>
     </div></div>
   </div>
   <div class="col-6 col-md">
     <div class="card stat-card"><div class="card-body py-2 px-3">
       <div class="stat-label">Employer NSSF cost</div>
-      <div class="stat-value">{{ totals.nssf_employer|floatformat:0|intcomma }}</div>
+      <div class="stat-value">{{ totals.nssf_employer|floatformat:0|intcomma }} KHR</div>
     </div></div>
   </div>
 </div>
@@ -92,10 +92,10 @@
           </td>
           <td>{{ slip.employee.full_name }}
             <span class="text-muted small">· {{ slip.employee.position }}</span></td>
-          <td class="text-end">{{ slip.gross|floatformat:0|intcomma }}</td>
-          <td class="text-end">{{ slip.nssf_employee|floatformat:0|intcomma }}</td>
-          <td class="text-end">{{ slip.salary_tax|floatformat:0|intcomma }}</td>
-          <td class="text-end fw-semibold">{{ slip.net|floatformat:0|intcomma }}</td>
+          <td class="text-end">{{ slip.gross|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end">{{ slip.nssf_employee|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end">{{ slip.salary_tax|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end fw-semibold">{{ slip.net|floatformat:0|intcomma }} KHR</td>
         </tr>
         {% empty %}
         <tr><td colspan="6" class="text-center text-muted py-4">

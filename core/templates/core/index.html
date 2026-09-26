@@ -27,8 +27,8 @@
       </div>
       <div class="text-md-end">
         <div class="stat-label">Net paid</div>
-        <div class="fs-4 fw-bold">{{ run_summary.net|floatformat:0|intcomma }}</div>
-        <a class="btn btn-sm btn-light mt-2" href="{% url 'payroll:run_detail' run_summary.run.pk %}">
+        <div class="fs-4 fw-bold">{{ run_summary.net|floatformat:0|intcomma }} KHR</div>
+        <a class="btn btn-sm hero-cta mt-2" href="{% url 'payroll:run_detail' run_summary.run.pk %}">
           Open {{ run_summary.run.period_label }}</a>
       </div>
     </div>
@@ -102,11 +102,11 @@
         <div class="row g-2 mt-2 small">
           <div class="col-6 d-flex justify-content-between">
             <span class="text-muted">Gross payroll</span>
-            <strong class="ms-2">{{ run_summary.gross|floatformat:0|intcomma }}</strong>
+            <strong class="ms-2">{{ run_summary.gross|floatformat:0|intcomma }} KHR</strong>
           </div>
           <div class="col-6 d-flex justify-content-between">
             <span class="text-muted">Employer NSSF cost</span>
-            <strong class="ms-2">{{ run_summary.employer|floatformat:0|intcomma }}</strong>
+            <strong class="ms-2">{{ run_summary.employer|floatformat:0|intcomma }} KHR</strong>
           </div>
         </div>
       </div>
@@ -151,7 +151,7 @@
               {% endif %}
             </td>
             <td class="text-center">{{ r.headcount }}</td>
-            <td class="text-end">{{ r.net_total|floatformat:0|intcomma }}</td>
+            <td class="text-end">{{ r.net_total|floatformat:0|intcomma }} KHR</td>
           </tr>
           {% empty %}
           <tr><td colspan="4" class="text-center text-muted py-3">

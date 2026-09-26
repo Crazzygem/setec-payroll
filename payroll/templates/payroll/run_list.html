@@ -37,9 +37,9 @@
             {% endif %}
           </td>
           <td class="text-center">{{ run.headcount }}</td>
-          <td class="text-end">{{ run.gross_total|floatformat:0|intcomma }}</td>
-          <td class="text-end">{{ run.tax_total|floatformat:0|intcomma }}</td>
-          <td class="text-end">{{ run.net_total|floatformat:0|intcomma }}</td>
+          <td class="text-end">{{ run.gross_total|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end">{{ run.tax_total|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end">{{ run.net_total|floatformat:0|intcomma }} KHR</td>
         </tr>
         {% empty %}
         <tr>

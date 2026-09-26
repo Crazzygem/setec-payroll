@@ -166,11 +166,11 @@
     <div class="section-title">EARNINGS</div>
     <table>
       <tbody>
-        <tr><td>Basic salary</td><td class="amount">{{ slip.base|floatformat:0|intcomma }}</td></tr>
-        <tr><td>Allowance</td><td class="amount">{{ slip.allowance|floatformat:0|intcomma }}</td></tr>
-        <tr><td>Overtime</td><td class="amount">{{ slip.overtime|floatformat:0|intcomma }}</td></tr>
-        <tr><td>Bonus</td><td class="amount">{{ slip.bonus|floatformat:0|intcomma }}</td></tr>
-        <tr><th>Gross cash salary</th><th class="amount">{{ slip.gross|floatformat:0|intcomma }}</th></tr>
+        <tr><td>Basic salary</td><td class="amount">{{ slip.base|floatformat:0|intcomma }} KHR</td></tr>
+        <tr><td>Allowance</td><td class="amount">{{ slip.allowance|floatformat:0|intcomma }} KHR</td></tr>
+        <tr><td>Overtime</td><td class="amount">{{ slip.overtime|floatformat:0|intcomma }} KHR</td></tr>
+        <tr><td>Bonus</td><td class="amount">{{ slip.bonus|floatformat:0|intcomma }} KHR</td></tr>
+        <tr><th>Gross cash salary</th><th class="amount">{{ slip.gross|floatformat:0|intcomma }} KHR</th></tr>
       </tbody>
     </table>
 
@@ -178,14 +178,14 @@
     <table>
       <tbody>
         <tr><td>NSSF contribution (2% employee, pension)</td>
-            <td class="amount">-{{ slip.nssf_employee|floatformat:0|intcomma }}</td></tr>
+            <td class="amount">-{{ slip.nssf_employee|floatformat:0|intcomma }} KHR</td></tr>
         <tr><td>Salary tax withheld (PAYE, taxable
-              {{ slip.taxable|floatformat:0|intcomma }})</td>
-            <td class="amount">-{{ slip.salary_tax|floatformat:0|intcomma }}</td></tr>
+              {{ slip.taxable|floatformat:0|intcomma }} KHR)</td>
+            <td class="amount">-{{ slip.salary_tax|floatformat:0|intcomma }} KHR</td></tr>
         <tr><td>Advances / other deductions</td>
-            <td class="amount">-{{ slip.advances|floatformat:0|intcomma }}</td></tr>
+            <td class="amount">-{{ slip.advances|floatformat:0|intcomma }} KHR</td></tr>
         <tr><th>Total deductions</th>
-            <th class="amount">-{{ slip.total_deductions|floatformat:0|intcomma }}</th></tr>
+            <th class="amount">-{{ slip.total_deductions|floatformat:0|intcomma }} KHR</th></tr>
       </tbody>
     </table>
 
@@ -201,11 +201,11 @@
     <table>
       <tbody>
         <tr><td>Dependant allowance applied ({{ slip.dependents }} × 150,000)</td>
-            <td class="amount">{{ slip.dependent_allowance|floatformat:0|intcomma }}</td></tr>
+            <td class="amount">{{ slip.dependent_allowance|floatformat:0|intcomma }} KHR</td></tr>
         <tr><td>Employer NSSF contribution (5.4%)</td>
-            <td class="amount">{{ slip.nssf_employer|floatformat:0|intcomma }}</td></tr>
+            <td class="amount">{{ slip.nssf_employer|floatformat:0|intcomma }} KHR</td></tr>
         <tr><td>Seniority accrual this month (simplified, memo only)</td>
-            <td class="amount">{{ slip.seniority_accrual|floatformat:0|intcomma }}</td></tr>
+            <td class="amount">{{ slip.seniority_accrual|floatformat:0|intcomma }} KHR</td></tr>
       </tbody>
     </table>
 

@@ -77,26 +77,6 @@
     .table { font-variant-numeric: tabular-nums; }
     tbody tr[data-href] { cursor: pointer; }
 
-    /* Headcount share bar on the organization tables (R-31: proportion at a
-       glance without a chart, since the counts are small integers). */
-    .org-bar {
-      display: inline-block;
-      width: 64px;
-      height: 6px;
-      border-radius: 3px;
-      background: #e5e7eb;
-      overflow: hidden;
-      vertical-align: middle;
-    }
-    .org-bar::after {
-      content: '';
-      display: block;
-      width: var(--w, 0%);
-      height: 100%;
-      background: var(--accent);
-    }
-    .org-members > td { background: #f8fafc; padding-top: 0.6rem; padding-bottom: 0.6rem; }
-    .org-members .btn { min-height: 30px; }
 
     .chart-box { position: relative; height: 240px; }
     .hero-run {
@@ -106,6 +86,15 @@
     }
     .hero-run .stat-label { color: rgba(255, 255, 255, 0.78); }
     .hero-run a { color: #a7f3d0; }
+    /* Hero CTA: white surface, emerald-700 label (5.48:1 on white). The pale
+       mint on white used before failed contrast badly. */
+    .hero-cta {
+      background: #ffffff;
+      color: var(--accent-strong);
+      border: 1px solid #ffffff;
+      font-weight: 600;
+    }
+    .hero-cta:hover, .hero-cta:focus { background: #ecfdf5; color: #065f46; }
     .table > :not(caption) > * > * { padding: 0.55rem 0.75rem; }
     .btn-accent { background: var(--accent-strong); color: #fff; }
     .btn-accent:hover { background: #065f46; color: #fff; }

@@ -143,12 +143,10 @@ def _org_render(request, template, model, form, group_field, modal=None, target=
                 status=200, q='', sort='name'):
     run = _latest_run()
     items = _org_items(model, group_field, run, q, sort)
-    expanded = _parse_pk(request.GET.get('show'))
     members = []
-    if expanded:
-        item = items.filter(pk=expanded).first() or get_object_or_404(model, pk=expanded)
+    if target is not None and modal == 'edit':
         members = list(
-            item.employees.select_related('position', 'department').order_by('emp_id')
+            target.employees.select_related('position', 'department').order_by('emp_id')
         )
     return render(
         request,
@@ -161,9 +159,7 @@ def _org_render(request, template, model, form, group_field, modal=None, target=
             'run': run,
             'q': q,
             'sort': sort,
-            'expanded': expanded,
             'members': members,
-            'active_total': Employee.objects.filter(is_active=True).count(),
             'group_field': group_field,
         },
         status=status,
