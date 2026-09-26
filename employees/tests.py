@@ -262,3 +262,74 @@ class OrganizationTests(TestCase):
         )
         self.assertEqual(response.context['members'], [])
         self.assertContains(response, 'No employees in this department')
+
+
+class EmployeeListImprovementTests(TestCase):
+    def setUp(self):
+        User.objects.create_user('hr', password='hrpass123')
+        self.client.login(username='hr', password='hrpass123')
+
+    def test_delete_with_payslips_offers_deactivate_not_500(self):
+        from payroll.services import generate_run
+        employee = make_employee()
+        generate_run(2026, 9)
+        response = self.client.get(reverse('employees:list') + f'?delete={employee.pk}')
+        self.assertContains(response, 'Deactivate employee')
+        response = self.client.post(reverse('employees:delete', args=[employee.pk]))
+        self.assertRedirects(response, reverse('employees:list'))
+        self.assertTrue(Employee.objects.filter(pk=employee.pk).exists())
+        response = self.client.post(reverse('employees:deactivate', args=[employee.pk]))
+        self.assertRedirects(response, reverse('employees:list'))
+        employee.refresh_from_db()
+        self.assertFalse(employee.is_active)
+
+    def test_filters_default_to_active_and_combine(self):
+        make_employee()
+        make_employee(emp_id='EMP002', first_name='Vandy', department='Finance')
+        make_employee(emp_id='EMP003', first_name='Sokha', is_active=False)
+        url = reverse('employees:list')
+        ids = lambda r: [e.emp_id for e in r.context['employees']]
+        self.assertEqual(ids(self.client.get(url)), ['EMP001', 'EMP002'])
+        self.assertEqual(ids(self.client.get(url + '?status=inactive')), ['EMP003'])
+        self.assertEqual(len(ids(self.client.get(url + '?status=all'))), 3)
+        finance = Department.objects.get(name='Finance')
+        self.assertEqual(ids(self.client.get(url + f'?dept={finance.pk}')), ['EMP002'])
+        response = self.client.get(url + '?q=nomatch')
+        self.assertContains(response, 'No employees match these filters')
+
+    def test_pagination(self):
+        for i in range(30):
+            make_employee(emp_id=f'E{i:03d}')
+        url = reverse('employees:list')
+        self.assertEqual(len(self.client.get(url).context['employees']), 25)
+        response = self.client.get(url + '?page=2')
+        self.assertEqual(len(response.context['employees']), 5)
+        self.assertContains(response, 'aria-label="Employee pages"')
+
+    def test_page_number_kept_in_row_and_close_links(self):
+        for i in range(30):
+            make_employee(emp_id=f'E{i:03d}')
+        url = reverse('employees:list')
+        response = self.client.get(url + '?page=2')
+        self.assertContains(response, 'page=2')  # row links carry the page
+        edit_pk = response.context['employees'][0].pk
+        response = self.client.get(url + f'?page=2&edit={edit_pk}')
+        self.assertContains(response, f'href="{url}?page=2"')  # close/cancel
+        self.assertNotContains(response, 'page=1&amp;page=')
+
+    def test_form_is_grouped_with_help_text(self):
+        response = self.client.get(reverse('employees:list') + '?new=1')
+        for legend in ('Identity', 'Job', 'Pay', 'Tax and NSSF'):
+            self.assertContains(response, f'<legend class="section-label">{legend}</legend>')
+        self.assertContains(response, 'flat 20% of gross')
+
+    def test_org_sort_links_and_bad_sort_falls_back(self):
+        make_employee()
+        url = reverse('employees:department_list')
+        response = self.client.get(url + '?sort=members')
+        self.assertContains(response, 'href="?sort=members"')
+        self.assertContains(response, 'aria-sort="descending"')
+        response = self.client.get(url + '?sort=bogus')
+        self.assertEqual(response.context['sort'], 'name')
+        # No run yet: money sorts fall back instead of erroring.
+        self.assertEqual(self.client.get(url + '?sort=gross').status_code, 200)

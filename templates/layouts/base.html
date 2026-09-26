@@ -17,7 +17,31 @@
       --accent-soft: #ecfdf5;
       --sidebar-bg: #111827;
       --sidebar-text: #9ca3af;
+      /* Bootstrap link colours pulled onto the palette: emerald-700 on white is 5.48:1 */
+      --bs-link-color: #047857;
+      --bs-link-color-rgb: 4, 120, 87;
+      --bs-link-hover-color: #065f46;
+      --bs-link-hover-color-rgb: 6, 95, 70;
+      --focus-ring: #047857;
     }
+    /* One visible focus ring for every control (R-32): 2px emerald-700, 5.48:1 on white. */
+    a:focus-visible, button:focus-visible, .btn:focus-visible, summary:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+      box-shadow: none;
+    }
+    .form-control:focus, .form-select:focus, .form-check-input:focus {
+      border-color: var(--accent-strong);
+      box-shadow: none;
+      /* The 25% halo alone is ~1.4:1; the solid 2px outline is the indicator (5.48:1). */
+      outline: 2px solid var(--accent-strong);
+      outline-offset: 1px;
+    }
+    .form-check-input:checked { background-color: var(--accent-strong); border-color: var(--accent-strong); }
+    .form-control.is-invalid:focus { outline-color: #b02a37; }
+    /* Dark surfaces (sidebar, emerald hero) take a white ring instead. */
+    .sidebar, .hero-run { --focus-ring: #ffffff; }
     body {
       font-family: 'IBM Plex Sans', sans-serif;
       background: #f8fafc;
@@ -73,7 +97,9 @@
     .content { padding: 1.5rem; }
     .card { border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
     .stat-card .stat-label { color: #6b7280; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
-    .stat-card .stat-value { font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+    .stat-card .stat-value .unit { font-size: 0.7em; font-weight: 600; color: #6b7280; }
+    .hero-run .unit { font-size: 0.7em; font-weight: 600; }
+    .stat-card .stat-value { font-weight: 700; font-size: clamp(1.05rem, 0.9rem + 0.8vw, 1.35rem); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
     .table { font-variant-numeric: tabular-nums; }
     tbody tr[data-href] { cursor: pointer; }
 
@@ -85,7 +111,7 @@
       border: 0;
     }
     .hero-run .stat-label { color: rgba(255, 255, 255, 0.78); }
-    .hero-run a { color: #a7f3d0; }
+    .hero-run a:not(.btn) { color: #ffffff; }
     /* Hero CTA: white surface, emerald-700 label (5.48:1 on white). The pale
        mint on white used before failed contrast badly. */
     .hero-cta {
@@ -98,7 +124,44 @@
     .table > :not(caption) > * > * { padding: 0.55rem 0.75rem; }
     .btn-accent { background: var(--accent-strong); color: #fff; }
     .btn-accent:hover { background: #065f46; color: #fff; }
-    .page-title { font-size: 1.25rem; font-weight: 700; }
+    .page-title { font-size: 1.25rem; font-weight: 700; margin: 0; }
+    .card-title-h { font-size: 1.1rem; font-weight: 600; }
+    /* Sortable column headers: plain text colour, arrow shows the active sort. */
+    th a.sort-link { color: inherit; text-decoration: none; white-space: nowrap; }
+    th a.sort-link:hover { text-decoration: underline; }
+    th a.sort-link.active { color: var(--accent-strong); }
+    .section-label {
+      font-size: 0.75rem; font-weight: 600; color: #6b7280;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; margin-bottom: 0.5rem;
+    }
+    .extras-input { width: 6.25rem; padding-left: 0.4rem; padding-right: 0.4rem; text-align: right; font-variant-numeric: tabular-nums; }
+    /* Run totals: Net paid is the focal card. Phones and tablets 2 columns,
+       small laptops 4 with Net paid on its own row, wide screens one row. */
+    .run-stats { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .run-stats-focal { grid-column: 1 / -1; }
+    @media (min-width: 992px) { .run-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (min-width: 1200px) {
+      .run-stats { grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr)); }
+      .run-stats-focal { grid-column: auto; }
+    }
+    .stat-card .stat-value.stat-value-sm { font-size: clamp(0.95rem, 0.85rem + 0.4vw, 1.1rem); }
+    /* Run table: nine columns do not fit a laptop, so the ID and the Net pay
+       columns stay pinned while the middle scrolls. */
+    .run-table > :not(caption) > * > * { padding: 0.5rem 0.5rem; }
+    .run-table th:first-child, .run-table td:first-child,
+    .run-table th:last-child, .run-table td:last-child {
+      position: sticky; z-index: 1; background: var(--bs-table-bg, #fff);
+    }
+    .run-table th:first-child, .run-table td:first-child { left: 0; }
+    .run-table th:last-child, .run-table td:last-child { right: 0; box-shadow: inset 1px 0 0 #e5e7eb; }
+    .run-table thead th, .run-table tfoot > tr > * { background: #f8f9fa; }
+    .run-table tbody tr:hover > td:first-child, .run-table tbody tr:hover > td:last-child { background: #f3f4f6; }
+    /* Phones: only Net pay stays pinned so the inputs have room to scroll into. */
+    @media (max-width: 575.98px) {
+      .run-table th:first-child, .run-table td:first-child { position: static; }
+    }
+    tfoot td, tfoot th { border-top: 2px solid #d1d5db; font-weight: 700; }
     .modal-content { border: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
 
     /* Small screens: sidebar becomes an off-canvas drawer (R-03) */
@@ -133,13 +196,27 @@
         justify-content: center;
       }
       .nav-link-side { display: flex; justify-content: flex-start; }
+      /* 16px text also stops iOS from zooming into a focused field. */
+      .form-control, .form-select { min-height: 44px; font-size: 1rem; }
+      .extras-input { width: 8.5rem; }
+      /* Links that stand alone (table IDs, sort headers, breadcrumb) get a
+         44px hit area; links inside a sentence stay inline (WCAG 2.5.8 exception). */
+      td > a, th a.sort-link, nav[aria-label="Breadcrumb"] a {
+        display: inline-flex; align-items: center; min-height: 44px;
+      }
+      .btn-close { width: 44px; height: 44px; padding: 0; }
+      /* Checkbox rows: the label becomes a 44px tall target next to a larger box. */
+      .form-check { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.6rem; padding-left: 0; }
+      .form-check .form-check-input { float: none; margin: 0; width: 1.35rem; height: 1.35rem; }
+      .form-check .form-check-label { flex: 1; min-height: 44px; display: flex; align-items: center; }
+      .form-check .form-text { flex-basis: 100%; margin-top: 0; }
     }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
 <div class="d-flex">
-  <aside class="sidebar d-flex flex-column">
+  <aside class="sidebar d-flex flex-column" id="sidebar">
     <a class="brand" href="{% url 'home' %}"><i class="bi bi-wallet2"></i> Payroll KH</a>
     <nav class="nav flex-column gap-1">
       <a class="nav-link-side {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">
@@ -154,23 +231,20 @@
       <a class="nav-link-side {% if 'positions/' in request.path %}active{% endif %}" href="{% url 'employees:position_list' %}">
         <i class="bi bi-briefcase"></i> Positions</a>
     </nav>
-    <div class="mt-auto px-2 small" style="color:var(--sidebar-text)">
-      <i class="bi bi-shield-check"></i> HR Admin
-    </div>
   </aside>
 
   <main>
     <div class="topbar">
       <div class="d-flex align-items-center">
         <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-2 d-md-none"
-                type="button" aria-label="Open menu" aria-expanded="false">
-          <i class="bi bi-list"></i>
+                type="button" aria-controls="sidebar" aria-expanded="false">
+          <i class="bi bi-list" aria-hidden="true"></i> Menu
         </button>
-        <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
       </div>
       <div class="d-flex align-items-center gap-3">
         {% if user.is_authenticated %}
-          <span class="text-muted small"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
+          <span class="text-muted small text-nowrap"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ user.username }}</span>
           <form method="post" action="{% url 'logout' %}" class="m-0">
             {% csrf_token %}
             <button class="btn btn-sm btn-outline-secondary" type="submit">Logout</button>
@@ -182,9 +256,9 @@
     <div class="content">
       {% if messages %}
         {% for message in messages %}
-          <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show py-2" role="alert">
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}light border{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show py-2" role="alert">
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
         {% endfor %}
       {% endif %}
@@ -208,24 +282,79 @@
         }
       });
     }
+    // Whole-row click opens the row's page; controls inside the row keep their own behaviour.
     document.querySelectorAll('tr[data-href]').forEach(function (row) {
       row.addEventListener('click', function (e) {
-        if (e.target.closest('a, button')) return;
+        if (e.target.closest('a, button, input, select, textarea, label')) return;
         window.location = row.dataset.href;
       });
     });
+
+    // Server-rendered modals: focus the first field, close on backdrop click and Escape.
+    var openModal = document.querySelector('.modal.show.d-block');
+    function closeModal() {
+      var close = openModal && openModal.querySelector('.btn-close');
+      if (close) close.click();
+    }
+    if (openModal) {
+      var first = openModal.querySelector(
+        '.modal-body input:not([type=hidden]):not([disabled]), .modal-body select, .modal-body textarea'
+      ) || openModal.querySelector('.modal-footer .btn:last-child, .btn-close');
+      if (first) first.focus();
+      openModal.addEventListener('click', function (e) {
+        if (e.target === openModal) closeModal();
+      });
+      // Keep Tab inside the dialog while it is open.
+      openModal.addEventListener('keydown', function (e) {
+        if (e.key !== 'Tab') return;
+        var items = openModal.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select, textarea'
+        );
+        if (!items.length) return;
+        var a = items[0], z = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === a) { z.focus(); e.preventDefault(); }
+        else if (!e.shiftKey && document.activeElement === z) { a.focus(); e.preventDefault(); }
+      });
+    }
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      var modal = document.querySelector('.modal.show.d-block');
-      if (modal) {
-        var close = modal.querySelector('.btn-close');
-        if (close) close.click();
-        return;
-      }
+      if (openModal) { closeModal(); return; }
       if (document.body.classList.contains('sidebar-open')) {
         document.body.classList.remove('sidebar-open');
-        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        if (toggle) { toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); }
       }
+    });
+
+    // Block double submits on POST forms: the clicked button shows a spinner.
+    // The button's name/value is copied into a hidden field first, because a
+    // disabled button is not sent with the form.
+    document.querySelectorAll('form[method=post]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        if (form.dataset.submitting) { e.preventDefault(); return; }
+        form.dataset.submitting = '1';
+        var btn = e.submitter || form.querySelector('[type=submit]');
+        if (!btn) return;
+        if (btn.name) {
+          var h = document.createElement('input');
+          h.type = 'hidden'; h.name = btn.name; h.value = btn.value;
+          form.appendChild(h);
+        }
+        btn.dataset.label = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>'
+          + btn.textContent.trim() + '\u2026';
+      });
+    });
+    // Coming back through the history cache must not leave buttons stuck.
+    window.addEventListener('pageshow', function (e) {
+      if (!e.persisted) return;
+      document.querySelectorAll('form[data-submitting]').forEach(function (form) {
+        delete form.dataset.submitting;
+        form.querySelectorAll('[type=submit][disabled]').forEach(function (btn) {
+          btn.disabled = false;
+          if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
+        });
+      });
     });
   })();
 </script>

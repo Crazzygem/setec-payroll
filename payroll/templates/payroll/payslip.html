@@ -38,7 +38,7 @@
     .brand { font-weight: 700; font-size: 1.3rem; }
     .brand i { color: var(--accent); }
     .title-block { text-align: right; }
-    .title-block h2 { font-size: 1.05rem; margin: 0; }
+    .title-block h1 { font-size: 1.05rem; margin: 0; }
     .meta-grid {
       display: grid; grid-template-columns: 1fr 1fr;
       gap: 0.25rem 2rem; margin-bottom: 1.25rem;
@@ -68,7 +68,19 @@
     .sign { text-align: center; width: 40%; }
     .sign .line { border-top: 1px solid #9ca3af; margin-top: 2.4rem; padding-top: 0.35rem;
                   font-size: 0.75rem; color: #6b7280; }
-    .actions { width: 794px; max-width: 100%; margin: 1rem auto 0; display: flex; gap: 0.5rem; }
+    .actions {
+      width: 794px; max-width: 100%; margin: 0 auto 1rem;
+      display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+    }
+    .actions .spacer { flex: 1; }
+    .actions .pos { color: #6b7280; font-size: 0.8rem; }
+    .btn[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
+    a { color: var(--accent-strong); }
+    /* Same visible focus ring as the app shell (R-32). */
+    a:focus-visible, button:focus-visible, input:focus {
+      outline: 2px solid var(--accent-strong); outline-offset: 2px;
+    }
+    @media (pointer: coarse) { .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 0.35rem; } }
     .btn {
       border: 1px solid #d1d5db; background: #fff; border-radius: 0.4rem;
       padding: 0.45rem 0.9rem; font-size: 0.85rem; cursor: pointer;
@@ -81,7 +93,6 @@
     .edit-panel {
       width: 794px; max-width: 100%; margin: 0 auto 1rem;
       background: #fff; border: 1px solid #d1d5db;
-      border-left: 3px solid var(--accent-strong);
       border-radius: 0.5rem; padding: 1rem 1.25rem;
     }
     .edit-head {
@@ -99,22 +110,48 @@
     }
     .edit-error { display: block; color: #b91c1c; font-size: 0.75rem; }
     .edit-note { font-size: 0.75rem; color: #6b7280; margin: 0.7rem 0; }
+    /* Phones: the A4 sheet reflows to one column instead of shrinking. */
+    @media (max-width: 599.98px) {
+      body { padding: 1rem 0.75rem; }
+      .sheet { padding: 1.25rem 1rem; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .payslip-head { flex-direction: column; gap: 0.5rem; }
+      .title-block { text-align: left; }
+      .net-box .value { font-size: 1.2rem; }
+      .edit-fields input { width: 100%; }
+      .edit-fields > div { flex: 1 1 8rem; }
+    }
     @media print {
       body { background: #fff; padding: 0; }
       .sheet { box-shadow: none; padding: 0; border-radius: 0; }
-      .actions, .edit-panel { display: none; }
+      .actions, .edit-panel, .messages { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="actions">
-    <a class="btn" href="javascript:history.back()"><i class="bi bi-arrow-left"></i> Back</a>
-    {% if slip.run.is_draft %}
-    <a class="btn" href="?edit=1"><i class="bi bi-sliders"></i> Extras</a>
+  <nav class="actions" aria-label="Payslip navigation">
+    <a class="btn" href="{% url 'payroll:run_detail' slip.run.pk %}">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ slip.run.period_label }}</a>
+    {% if prev_slip %}
+      <a class="btn" href="{% url 'payroll:payslip_view' prev_slip.0 %}" rel="prev">
+        <i class="bi bi-chevron-left" aria-hidden="true"></i> {{ prev_slip.1 }}</a>
+    {% else %}
+      <span class="btn" aria-disabled="true"><i class="bi bi-chevron-left" aria-hidden="true"></i> Previous</span>
     {% endif %}
-    <button class="btn btn-primary" onclick="window.print()">
-      <i class="bi bi-printer"></i> Print / Save PDF</button>
-  </div>
+    <span class="pos">{{ position }} of {{ count }}</span>
+    {% if next_slip %}
+      <a class="btn" href="{% url 'payroll:payslip_view' next_slip.0 %}" rel="next">
+        {{ next_slip.1 }} <i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+    {% else %}
+      <span class="btn" aria-disabled="true">Next <i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+    {% endif %}
+    <span class="spacer"></span>
+    {% if slip.run.is_draft %}
+    <a class="btn" href="?edit=1"><i class="bi bi-sliders" aria-hidden="true"></i> Extras</a>
+    {% endif %}
+    <button class="btn btn-primary" type="button" onclick="window.print()">
+      <i class="bi bi-printer" aria-hidden="true"></i> Print / Save PDF</button>
+  </nav>
 
   {% if edit_form %}
   <div class="edit-panel">
@@ -134,8 +171,16 @@
         {% endfor %}
       </div>
       <p class="edit-note">All amounts in KHR. Net pay and tax are recalculated on save.</p>
-      <button class="btn btn-primary" type="submit">Recalculate</button>
+      <button class="btn btn-primary" type="submit">Save and recalculate</button>
     </form>
+    <script>
+      // Same double-submit guard as the app shell.
+      document.querySelector('.edit-panel form').addEventListener('submit', function (e) {
+        var btn = this.querySelector('[type=submit]');
+        if (btn.disabled) { e.preventDefault(); return; }
+        btn.disabled = true; btn.textContent = 'Saving\u2026';
+      });
+    </script>
   </div>
   {% endif %}
 
@@ -147,7 +192,7 @@
           Monthly Payslip · Cambodia</div>
       </div>
       <div class="title-block">
-        <h2>PAYSLIP</h2>
+        <h1>PAYSLIP</h1>
         <div style="color:#6b7280">{{ slip.run.period_label }}</div>
         <span class="badge-status {% if slip.run.status == 'FINALIZED' %}final{% endif %}">
           {{ slip.run.get_status_display }}</span>
@@ -194,7 +239,7 @@
         <div class="label">Net pay</div>
         <div style="font-size:0.72rem;opacity:0.85">Take-home for {{ slip.run.period_label }}</div>
       </div>
-      <div class="value">{{ slip.net|intcomma }} KHR</div>
+      <div class="value">{{ slip.net|floatformat:0|intcomma }} KHR</div>
     </div>
 
     <div class="section-title">EMPLOYER &amp; MEMO ITEMS</div>

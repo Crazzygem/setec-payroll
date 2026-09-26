@@ -4,106 +4,289 @@
 {% block page_title %}{{ run.period_label }} Payroll{% endblock %}
 {% block content %}
 
+<nav class="small mb-2" aria-label="Breadcrumb">
+  <a href="{% url 'payroll:run_list' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Payroll Runs</a>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
-    {% if run.status == 'DRAFT' %}
+    {% if run.is_draft %}
       <span class="badge text-bg-warning">Draft</span>
-      <span class="text-muted small ms-2">Edit overtime / bonus / advances, then finalize.</span>
+      <span class="text-muted small ms-2">Enter overtime, bonus and advances below, then finalize.</span>
     {% else %}
       <span class="badge text-bg-success">Finalized</span>
       <span class="text-muted small ms-2">Locked on {{ run.finalized_at|date:'d M Y H:i' }}.</span>
     {% endif %}
   </div>
-  <div class="d-flex gap-2">
-    <a class="btn btn-sm btn-outline-secondary" href="{% url 'payroll:run_list' %}">
-      <i class="bi bi-arrow-left"></i> All runs</a>
-    <a class="btn btn-sm btn-outline-secondary"
-       href="{% url 'payroll:export_csv' run.pk %}">
-      <i class="bi bi-filetype-csv"></i> Export CSV</a>
-    <a class="btn btn-sm btn-outline-secondary"
-       href="{% url 'payroll:export_xlsx' run.pk %}">
-      <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel</a>
-    {% if run.status == 'DRAFT' %}
-      <form method="post" action="{% url 'payroll:run_finalize' run.pk %}"
-            onsubmit="return confirm('Finalize {{ run.period_label }} payroll? Payslips will be locked.')">
-        {% csrf_token %}
-        <button class="btn btn-accent btn-sm" type="submit">
-          <i class="bi bi-lock"></i> Finalize run</button>
-      </form>
+  <div class="d-flex gap-2 flex-wrap">
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+              data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-download" aria-hidden="true"></i> Export</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'payroll:export_csv' run.pk %}">
+          <i class="bi bi-filetype-csv" aria-hidden="true"></i> CSV file</a></li>
+        <li><a class="dropdown-item" href="{% url 'payroll:export_xlsx' run.pk %}">
+          <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> Excel workbook</a></li>
+      </ul>
+    </div>
+    {% if run.is_draft %}
+      <a class="btn btn-sm btn-outline-secondary" href="?regenerate=1">
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Regenerate</a>
+      <a class="btn btn-sm btn-outline-danger" href="?delete=1">
+        <i class="bi bi-trash3" aria-hidden="true"></i> Delete draft</a>
+      <a class="btn btn-accent btn-sm" href="?finalize=1">
+        <i class="bi bi-lock" aria-hidden="true"></i> Finalize run</a>
     {% endif %}
   </div>
 </div>
 
-<div class="alert alert-info py-2 small">
-  <i class="bi bi-calendar-event"></i>
-  Withheld salary tax of <strong>{{ totals.tax|floatformat:0|intcomma }} KHR</strong>
-  must be paid to GDT by <strong>{{ run.gdt_due_date|date:'d M Y' }}</strong>
-  (20th of the following month).
+{# Deadline banner: the colour follows the state, and the text always says it too. #}
+{% with days=run.days_until_due state=run.deadline_state %}
+<div class="alert py-2 small {% if state == 'overdue' %}alert-danger{% elif state == 'soon' %}alert-warning{% elif state == 'past' %}alert-secondary{% else %}alert-light border{% endif %}"
+     role="{% if state == 'overdue' %}alert{% else %}status{% endif %}">
+  <i class="bi {% if state == 'overdue' %}bi-exclamation-octagon{% else %}bi-calendar-event{% endif %}" aria-hidden="true"></i>
+  {% if state == 'overdue' %}
+    <strong>Overdue by {{ run.days_overdue }} day{{ run.days_overdue|pluralize }}.</strong>
+    This run is still a draft. Withheld salary tax of <strong>{{ totals.tax|floatformat:0|intcomma }} KHR</strong>
+    was due to GDT on <strong>{{ run.gdt_due_date|date:'d M Y' }}</strong>.
+  {% elif state == 'past' %}
+    Withheld salary tax of <strong>{{ totals.tax|floatformat:0|intcomma }} KHR</strong>
+    was due to GDT on <strong>{{ run.gdt_due_date|date:'d M Y' }}</strong> (20th of the following month).
+  {% else %}
+    Withheld salary tax of <strong>{{ totals.tax|floatformat:0|intcomma }} KHR</strong>
+    must be paid to GDT by <strong>{{ run.gdt_due_date|date:'d M Y' }}</strong>:
+    <strong>{% if days == 0 %}due today{% else %}{{ days }} day{{ days|pluralize }} left{% endif %}</strong>.
+  {% endif %}
 </div>
+{% endwith %}
 
-<div class="row g-3 mb-3">
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
-      <div class="stat-label">Gross payroll</div>
-      <div class="stat-value">{{ totals.gross|floatformat:0|intcomma }} KHR</div>
-    </div></div>
-  </div>
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
-      <div class="stat-label">NSSF (employee)</div>
-      <div class="stat-value">{{ totals.nssf_employee|floatformat:0|intcomma }} KHR</div>
-    </div></div>
-  </div>
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
-      <div class="stat-label">Salary tax withheld</div>
-      <div class="stat-value">{{ totals.tax|floatformat:0|intcomma }} KHR</div>
-    </div></div>
-  </div>
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
+<div class="run-stats mb-3">
+  <div class="run-stats-focal">
+    <div class="card stat-card h-100 border-success-subtle"><div class="card-body py-2 px-3">
       <div class="stat-label">Net paid</div>
-      <div class="stat-value">{{ totals.net|floatformat:0|intcomma }} KHR</div>
+      <div class="stat-value">{{ totals.net|floatformat:0|intcomma }} <span class="unit">KHR</span></div>
     </div></div>
   </div>
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
+  <div>
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
+      <div class="stat-label">Gross payroll</div>
+      <div class="stat-value stat-value-sm">{{ totals.gross|floatformat:0|intcomma }} <span class="unit">KHR</span></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
+      <div class="stat-label">Salary tax withheld</div>
+      <div class="stat-value stat-value-sm">{{ totals.tax|floatformat:0|intcomma }} <span class="unit">KHR</span></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
+      <div class="stat-label">NSSF (employee)</div>
+      <div class="stat-value stat-value-sm">{{ totals.nssf_employee|floatformat:0|intcomma }} <span class="unit">KHR</span></div>
+    </div></div>
+  </div>
+  <div>
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
       <div class="stat-label">Employer NSSF cost</div>
-      <div class="stat-value">{{ totals.nssf_employer|floatformat:0|intcomma }} KHR</div>
+      <div class="stat-value stat-value-sm">{{ totals.nssf_employer|floatformat:0|intcomma }} <span class="unit">KHR</span></div>
     </div></div>
   </div>
 </div>
 
+{% if run.is_draft %}
+<form method="post" action="{% url 'payroll:run_extras_update' run.pk %}" id="extrasForm">
+  {% csrf_token %}
+  {{ formset.management_form }}
+{% endif %}
 <div class="card">
+  {% if run.is_draft %}
+  <div class="card-body py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom">
+    <p class="small text-muted mb-0">Amounts in KHR. Net pay and tax are recalculated when you save.
+      Select an employee ID to open the payslip.</p>
+    <button class="btn btn-accent btn-sm" type="submit">
+      <i class="bi bi-calculator" aria-hidden="true"></i> Save and recalculate</button>
+  </div>
+  {% endif %}
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
+    <table class="table table-hover align-middle mb-0 run-table">
       <thead class="table-light">
         <tr>
-          <th>ID</th><th>Employee</th><th class="text-end">Gross</th>
+          <th>ID</th><th>Employee</th>
+          <th class="text-end">Overtime</th><th class="text-end">Bonus</th>
+          <th class="text-end">Advances</th>
+          <th class="text-end">Gross</th>
           <th class="text-end">NSSF 2%</th><th class="text-end">Tax</th>
           <th class="text-end">Net pay</th>
         </tr>
       </thead>
       <tbody>
-        {% for slip in slips %}
+        {% for slip, form in rows %}
         <tr data-href="{% url 'payroll:payslip_view' slip.pk %}">
           <td class="fw-semibold">
             <a href="{% url 'payroll:payslip_view' slip.pk %}">{{ slip.employee.emp_id }}</a>
+            {% if form %}{{ form.id }}{% endif %}
           </td>
-          <td>{{ slip.employee.full_name }}
-            <span class="text-muted small">· {{ slip.employee.position }}</span></td>
-          <td class="text-end">{{ slip.gross|floatformat:0|intcomma }} KHR</td>
-          <td class="text-end">{{ slip.nssf_employee|floatformat:0|intcomma }} KHR</td>
-          <td class="text-end">{{ slip.salary_tax|floatformat:0|intcomma }} KHR</td>
-          <td class="text-end fw-semibold">{{ slip.net|floatformat:0|intcomma }} KHR</td>
+          <td class="text-nowrap">{{ slip.employee.full_name }}
+            <span class="text-muted small d-block">{{ slip.employee.position }}</span></td>
+          {% if form %}
+            {% for field in form.visible_fields %}
+            <td class="text-end">
+              <input type="number" name="{{ field.html_name }}" id="{{ field.auto_id }}"
+                     value="{{ field.value|default_if_none:'' }}" min="0" step="1" inputmode="numeric"
+                     class="form-control form-control-sm extras-input ms-auto{% if field.errors %} is-invalid{% endif %}"
+                     aria-label="{{ field.label }} for {{ slip.employee.emp_id }}"
+                     {% if field.errors %}aria-describedby="{{ field.auto_id }}_err"{% endif %}>
+              {% for e in field.errors %}<div class="invalid-feedback d-block text-end" id="{{ field.auto_id }}_err">{{ e }}</div>{% endfor %}
+            </td>
+            {% endfor %}
+          {% else %}
+            <td class="text-end text-nowrap">{{ slip.overtime|floatformat:0|intcomma }}</td>
+            <td class="text-end text-nowrap">{{ slip.bonus|floatformat:0|intcomma }}</td>
+            <td class="text-end text-nowrap">{{ slip.advances|floatformat:0|intcomma }}</td>
+          {% endif %}
+          <td class="text-end text-nowrap">{{ slip.gross|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end text-nowrap">{{ slip.nssf_employee|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end text-nowrap">{{ slip.salary_tax|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end text-nowrap fw-semibold">{{ slip.net|floatformat:0|intcomma }} KHR</td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center text-muted py-4">
-          No employees yet: add employees first.</td></tr>
+        <tr><td colspan="9" class="text-center text-muted py-4">
+          This run has no payslips. <a href="{% url 'employees:list' %}">Add or activate employees</a>,
+          {% if run.is_draft %}then use Regenerate.{% else %}then generate a new run.{% endif %}</td></tr>
         {% endfor %}
       </tbody>
+      {% if rows %}
+      <tfoot class="table-light">
+        <tr>
+          <th colspan="2">Total · {{ rows|length }} employee{{ rows|length|pluralize }}</th>
+          <td class="text-end text-nowrap">{{ totals.overtime|floatformat:0|intcomma }}</td>
+          <td class="text-end text-nowrap">{{ totals.bonus|floatformat:0|intcomma }}</td>
+          <td class="text-end text-nowrap">{{ totals.advances|floatformat:0|intcomma }}</td>
+          <td class="text-end text-nowrap">{{ totals.gross|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end text-nowrap">{{ totals.nssf_employee|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end text-nowrap">{{ totals.tax|floatformat:0|intcomma }} KHR</td>
+          <td class="text-end text-nowrap">{{ totals.net|floatformat:0|intcomma }} KHR</td>
+        </tr>
+      </tfoot>
+      {% endif %}
     </table>
   </div>
+  {% if run.is_draft and rows %}
+  <div class="card-body py-2 d-flex justify-content-end border-top">
+    <button class="btn btn-accent btn-sm" type="submit">
+      <i class="bi bi-calculator" aria-hidden="true"></i> Save and recalculate</button>
+  </div>
+  {% endif %}
 </div>
+{% if run.is_draft %}</form>{% endif %}
 
+{# ---------- Finalize modal ---------- #}
+{% if modal == 'finalize' %}
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'payroll:run_finalize' run.pk %}">
+        {% csrf_token %}
+        <div class="modal-header py-2">
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Finalize {{ run.period_label }} payroll</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'payroll:run_detail' run.pk %}"></a>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2">Finalizing locks all {{ rows|length }} payslip{{ rows|length|pluralize }}.
+            Overtime, bonus and advances can no longer be changed, and this cannot be undone.</p>
+          <dl class="row small mb-0">
+            <dt class="col-6 fw-normal text-muted">Employees</dt><dd class="col-6 text-end mb-1">{{ rows|length }}</dd>
+            <dt class="col-6 fw-normal text-muted">Gross payroll</dt><dd class="col-6 text-end mb-1">{{ totals.gross|floatformat:0|intcomma }} KHR</dd>
+            <dt class="col-6 fw-normal text-muted">Salary tax to pay GDT</dt><dd class="col-6 text-end mb-1">{{ totals.tax|floatformat:0|intcomma }} KHR</dd>
+            <dt class="col-6 fw-semibold">Net paid</dt><dd class="col-6 text-end fw-semibold mb-0">{{ totals.net|floatformat:0|intcomma }} KHR</dd>
+          </dl>
+        </div>
+        <div class="modal-footer py-2">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'payroll:run_detail' run.pk %}">Cancel</a>
+          <button class="btn btn-accent btn-sm" type="submit"><i class="bi bi-lock" aria-hidden="true"></i> Finalize and lock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show"></div>
+{% endif %}
+
+{# ---------- Regenerate modal ---------- #}
+{% if modal == 'regenerate' %}
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'payroll:run_regenerate' run.pk %}">
+        {% csrf_token %}
+        <div class="modal-header py-2">
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Regenerate {{ run.period_label }} draft</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'payroll:run_detail' run.pk %}"></a>
+        </div>
+        <div class="modal-body small">
+          <p class="mb-2">This brings the draft in line with current employee records:</p>
+          <ul class="mb-2">
+            <li>Salary, allowance, dependants, NSSF and residency are copied again from each employee.</li>
+            <li>Employees who became active get a payslip.</li>
+            <li>Payslips of employees who are no longer active are removed.</li>
+          </ul>
+          <p class="mb-0">Overtime, bonus and advances you already entered are kept.</p>
+        </div>
+        <div class="modal-footer py-2">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'payroll:run_detail' run.pk %}">Cancel</a>
+          <button class="btn btn-accent btn-sm" type="submit">Regenerate draft</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show"></div>
+{% endif %}
+
+{# ---------- Delete draft modal ---------- #}
+{% if modal == 'delete' %}
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'payroll:run_delete' run.pk %}">
+        {% csrf_token %}
+        <div class="modal-header py-2">
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Delete {{ run.period_label }} draft</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'payroll:run_detail' run.pk %}"></a>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">Delete the draft and its {{ rows|length }} payslip{{ rows|length|pluralize }}?</p>
+          <p class="text-muted small mb-0">Overtime, bonus and advances entered for this month are lost.
+            You can generate {{ run.period_label }} again afterwards.</p>
+        </div>
+        <div class="modal-footer py-2">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'payroll:run_detail' run.pk %}">Cancel</a>
+          <button class="btn btn-sm btn-danger" type="submit">Delete draft</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show"></div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if run.is_draft %}
+<script>
+  // Warn before leaving the page with unsaved overtime/bonus/advances.
+  (function () {
+    var form = document.getElementById('extrasForm');
+    if (!form) return;
+    var dirty = false;
+    form.addEventListener('input', function () { dirty = true; });
+    form.addEventListener('submit', function () { dirty = false; });
+    window.addEventListener('beforeunload', function (e) {
+      if (dirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}

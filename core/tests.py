@@ -61,10 +61,12 @@ class DashboardTests(TestCase):
         self.assertContains(response, run.period_label)
         self.assertContains(response, 'is due to GDT by')
         self.assertContains(response, run.gdt_due_date.strftime('%d %b %Y'))
-        self.assertEqual(response.context['department_total'],
-                         Department.objects.count())
-        self.assertEqual(response.context['position_total'],
-                         Position.objects.count())
+        slip = run.payslips.get()
+        self.assertEqual(response.context['run_summary']['employer_cost'],
+                         slip.gross + slip.nssf_employer)
+        # Only one run: no month-over-month comparison is invented.
+        self.assertNotIn('prev_run', response.context['run_summary'])
+        self.assertContains(response, 'Shown once there are two payroll runs')
         self.assertEqual(len(response.context['draft_runs']), 1)
         self.assertContains(response, 'still a draft')
 
@@ -76,3 +78,22 @@ class DashboardTests(TestCase):
         self.assertContains(response, 'id="deptChart"')
         self.assertContains(response, 'chart.js@4.4.7')
         self.assertContains(response, 'integrity="sha384-')
+
+
+class DashboardComparisonTests(TestCase):
+    def setUp(self):
+        User.objects.create_user('hr', password='hrpass123')
+        self.client.login(username='hr', password='hrpass123')
+
+    def test_net_change_compares_with_previous_run(self):
+        emp = make_employee()
+        generate_run(2026, 8)
+        emp.base_salary = 3000000
+        emp.save()
+        latest, _ = generate_run(2026, 9)
+        response = self.client.get(reverse('home'))
+        summary = response.context['run_summary']
+        self.assertEqual(summary['prev_run'].month, 8)
+        august = PayrollRun.objects.get(month=8).payslips.get().net
+        self.assertEqual(summary['net_change'], latest.payslips.get().net - august)
+        self.assertContains(response, 'September 2026 against August 2026')

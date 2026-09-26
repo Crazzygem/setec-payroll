@@ -2,22 +2,50 @@
 {% load humanize %}
 {% block title %}Employees{% endblock %}
 {% block page_title %}Employees{% endblock %}
+{% block extra_css %}<style>.filter-search { width: 240px; } @media (max-width: 575.98px) { .filter-search { width: 100%; } }</style>{% endblock %}
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
-  <form class="d-flex" method="get" action="{% url 'employees:list' %}" role="search">
-    <input class="form-control form-control-sm" style="width:260px" type="search"
+<div class="d-flex justify-content-between align-items-start mb-3 gap-2 flex-wrap">
+  <form class="d-flex flex-wrap gap-2 align-items-center" method="get"
+        action="{% url 'employees:list' %}" role="search" aria-label="Filter employees">
+    <label class="visually-hidden" for="emp-q">Search employees</label>
+    <input id="emp-q" class="form-control form-control-sm filter-search" type="search"
            name="q" value="{{ q }}" placeholder="Search ID, name, position…">
-    <button class="btn btn-sm btn-outline-secondary ms-2" type="submit">
-      <i class="bi bi-search"></i></button>
-    {% if q %}
-      <a class="btn btn-sm btn-outline-secondary ms-1" href="{% url 'employees:list' %}">Clear</a>
+    <label class="visually-hidden" for="emp-dept">Department</label>
+    <select id="emp-dept" name="dept" class="form-select form-select-sm w-auto">
+      <option value="">All departments</option>
+      {% for d in departments %}
+        <option value="{{ d.pk }}" {% if filters.dept == d.pk %}selected{% endif %}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+    <label class="visually-hidden" for="emp-status">Status</label>
+    <select id="emp-status" name="status" class="form-select form-select-sm w-auto">
+      <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+      <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+      <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All statuses</option>
+    </select>
+    <label class="visually-hidden" for="emp-contract">Contract</label>
+    <select id="emp-contract" name="contract" class="form-select form-select-sm w-auto">
+      <option value="">All contracts</option>
+      {% for value, label in contract_choices %}
+        <option value="{{ value }}" {% if filters.contract == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-sm btn-outline-secondary" type="submit">
+      <i class="bi bi-search" aria-hidden="true"></i> Filter</button>
+    {% if filters_active %}
+      <a class="btn btn-sm btn-link" href="{% url 'employees:list' %}">Reset</a>
     {% endif %}
   </form>
-  <a class="btn btn-accent btn-sm" href="{% url 'employees:list' %}?new=1{% if q %}&q={{ q|urlencode }}{% endif %}">
-    <i class="bi bi-plus-lg"></i> Add Employee
+  <a class="btn btn-accent btn-sm" href="?new=1{% if keep %}&amp;{{ keep }}{% endif %}">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Employee
   </a>
 </div>
+
+<p class="text-muted small mb-2">
+  {{ page.paginator.count }} employee{{ page.paginator.count|pluralize }}{% if page.paginator.num_pages > 1 %},
+  showing {{ page.start_index }} to {{ page.end_index }}{% endif %}
+</p>
 
 <div class="card">
   <div class="table-responsive">
@@ -26,39 +54,38 @@
         <tr>
           <th>ID</th><th>Name</th><th>Position</th><th>Department</th>
           <th>Contract</th><th class="text-end">Base salary</th>
-          <th class="text-center">Depend.</th><th class="text-center">Status</th>
+          <th class="text-center"><abbr title="Dependants">Depend.</abbr></th><th class="text-center">Status</th>
         </tr>
       </thead>
       <tbody>
         {% for e in employees %}
-        <tr data-href="?edit={{ e.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">
+        <tr data-href="?edit={{ e.pk }}{% if keep %}&amp;{{ keep }}{% endif %}">
           <td class="fw-semibold">
-            <a href="?edit={{ e.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ e.emp_id }}</a>
+            <a href="?edit={{ e.pk }}{% if keep %}&amp;{{ keep }}{% endif %}">{{ e.emp_id }}</a>
           </td>
           <td>{{ e.full_name }}</td>
           <td>{{ e.position }}</td>
           <td>{{ e.department }}</td>
-          <td>
-            {% if e.contract_type == 'FIXED' %}
-              <span class="badge text-bg-secondary">Fixed</span>
-            {% else %}
-              <span class="badge text-bg-info">Open-ended</span>
-            {% endif %}
-          </td>
-          <td class="text-end">{{ e.base_salary|floatformat:0|intcomma }} KHR</td>
+          <td>{% if e.contract_type == 'FIXED' %}Fixed{% else %}Open-ended{% endif %}</td>
+          <td class="text-end text-nowrap">{{ e.base_salary|floatformat:0|intcomma }} KHR</td>
           <td class="text-center">{{ e.dependents }}</td>
           <td class="text-center">
             {% if e.is_active %}
               <span class="badge text-bg-success">Active</span>
             {% else %}
-              <span class="badge text-bg-light text-muted">Inactive</span>
+              <span class="badge text-bg-light border text-muted">Inactive</span>
             {% endif %}
           </td>
         </tr>
         {% empty %}
         <tr>
           <td colspan="8" class="text-center text-muted py-4">
-            No employees yet. <a href="?new=1">Add the first one</a>.
+            {% if filters_active %}
+              No employees match these filters.
+              <a href="{% url 'employees:list' %}">Reset the filters</a>.
+            {% else %}
+              No employees yet. <a href="?new=1">Add the first one</a>.
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -67,22 +94,45 @@
   </div>
 </div>
 
+{% if page.paginator.num_pages > 1 %}
+<nav class="mt-3" aria-label="Employee pages">
+  <ul class="pagination pagination-sm mb-0 flex-wrap">
+    <li class="page-item {% if not page.has_previous %}disabled{% endif %}">
+      {% if page.has_previous %}
+        <a class="page-link" href="?page={{ page.previous_page_number }}{% if keep_filters %}&amp;{{ keep_filters }}{% endif %}">Previous</a>
+      {% else %}<span class="page-link">Previous</span>{% endif %}
+    </li>
+    {% for n in page.paginator.page_range %}
+      <li class="page-item {% if n == page.number %}active{% endif %}">
+        <a class="page-link" href="?page={{ n }}{% if keep_filters %}&amp;{{ keep_filters }}{% endif %}"
+           {% if n == page.number %}aria-current="page"{% endif %}>{{ n }}</a>
+      </li>
+    {% endfor %}
+    <li class="page-item {% if not page.has_next %}disabled{% endif %}">
+      {% if page.has_next %}
+        <a class="page-link" href="?page={{ page.next_page_number }}{% if keep_filters %}&amp;{{ keep_filters }}{% endif %}">Next</a>
+      {% else %}<span class="page-link">Next</span>{% endif %}
+    </li>
+  </ul>
+</nav>
+{% endif %}
+
 {# ---------- Add modal ---------- #}
 {% if modal == 'new' %}
-<div class="modal fade show d-block" tabindex="-1" role="dialog">
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="post" action="{% url 'employees:create' %}">
         {% csrf_token %}
         <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Add Employee</h6>
-          <a class="btn-close" href="{% url 'employees:list' %}"></a>
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Add Employee</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'employees:list' %}{% if keep %}?{{ keep }}{% endif %}"></a>
         </div>
         <div class="modal-body">
           {% include 'employees/_form_fields.html' %}
         </div>
         <div class="modal-footer py-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}">Cancel</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}{% if keep %}?{{ keep }}{% endif %}">Cancel</a>
           <button class="btn btn-accent btn-sm" type="submit">Save employee</button>
         </div>
       </form>
@@ -94,24 +144,24 @@
 
 {# ---------- Edit modal ---------- #}
 {% if modal == 'edit' and target %}
-<div class="modal fade show d-block" tabindex="-1" role="dialog">
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="post" action="{% url 'employees:edit' target.pk %}">
         {% csrf_token %}
         <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Edit Employee · {{ target.emp_id }}</h6>
-          <a class="btn-close" href="{% url 'employees:list' %}"></a>
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Edit Employee · {{ target.emp_id }}</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'employees:list' %}{% if keep %}?{{ keep }}{% endif %}"></a>
         </div>
         <div class="modal-body">
           {% include 'employees/_form_fields.html' %}
         </div>
         <div class="modal-footer py-2">
           <a class="btn btn-sm btn-outline-danger"
-             href="?delete={{ target.pk }}{% if q %}&q={{ q|urlencode }}{% endif %}">
-            <i class="bi bi-trash3"></i> Delete</a>
+             href="?delete={{ target.pk }}{% if keep %}&amp;{{ keep }}{% endif %}">
+            <i class="bi bi-trash3" aria-hidden="true"></i> {% if target_has_payslips %}Deactivate{% else %}Delete{% endif %}</a>
           <div class="ms-auto d-flex gap-2">
-            <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}">Cancel</a>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}{% if keep %}?{{ keep }}{% endif %}">Cancel</a>
             <button class="btn btn-accent btn-sm" type="submit">Save changes</button>
           </div>
         </div>
@@ -122,26 +172,47 @@
 <div class="modal-backdrop fade show"></div>
 {% endif %}
 
-{# ---------- Delete modal ---------- #}
+{# ---------- Delete / deactivate modal ---------- #}
 {% if modal == 'delete' and target %}
-<div class="modal fade show d-block" tabindex="-1" role="dialog">
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="post" action="{% url 'employees:delete' target.pk %}">
-        {% csrf_token %}
-        <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Delete Employee</h6>
-          <a class="btn-close" href="{% url 'employees:list' %}"></a>
-        </div>
-        <div class="modal-body">
-          <p class="mb-1">Delete <strong>{{ target.emp_id }} · {{ target.full_name }}</strong>?</p>
-          <p class="text-muted small mb-0">This removes the record permanently.</p>
-        </div>
-        <div class="modal-footer py-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}">Cancel</a>
-          <button class="btn btn-sm btn-danger" type="submit">Delete</button>
-        </div>
-      </form>
+      <div class="modal-header py-2">
+        <h2 class="modal-title h6 fw-semibold" id="modalTitle">
+          {% if target_has_payslips %}Deactivate Employee{% else %}Delete Employee{% endif %}</h2>
+        <a class="btn-close" aria-label="Close" href="{% url 'employees:list' %}{% if keep %}?{{ keep }}{% endif %}"></a>
+      </div>
+      {% if target_has_payslips %}
+        <form method="post" action="{% url 'employees:deactivate' target.pk %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <p class="mb-1"><strong>{{ target.emp_id }} · {{ target.full_name }}</strong> has payslips in
+              payroll runs, so deleting the record would break that history.</p>
+            <p class="text-muted small mb-0">
+              {% if target.is_active %}Deactivating keeps every payslip and leaves this employee out of new payroll runs.
+              You can reactivate them later from the edit form.
+              {% else %}This employee is already inactive.{% endif %}</p>
+          </div>
+          <div class="modal-footer py-2">
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}{% if keep %}?{{ keep }}{% endif %}">Cancel</a>
+            {% if target.is_active %}
+              <button class="btn btn-sm btn-accent" type="submit">Deactivate employee</button>
+            {% endif %}
+          </div>
+        </form>
+      {% else %}
+        <form method="post" action="{% url 'employees:delete' target.pk %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <p class="mb-1">Delete <strong>{{ target.emp_id }} · {{ target.full_name }}</strong>?</p>
+            <p class="text-muted small mb-0">This employee has no payslips, so the record is removed permanently.</p>
+          </div>
+          <div class="modal-footer py-2">
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:list' %}{% if keep %}?{{ keep }}{% endif %}">Cancel</a>
+            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+          </div>
+        </form>
+      {% endif %}
     </div>
   </div>
 </div>

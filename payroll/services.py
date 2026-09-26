@@ -52,3 +52,56 @@ def generate_run(year: int, month: int):
             slips.append(slip)
         Payslip.objects.bulk_create(slips)
     return run, created
+
+
+def next_period(today=None):
+    """(year, month) to offer for a new run: the month after the newest run,
+    or the current month when no run exists yet."""
+    latest = PayrollRun.objects.first()  # ordered newest period first
+    if latest is None:
+        from django.utils import timezone
+        today = today or timezone.localdate()
+        return today.year, today.month
+    if latest.month == 12:
+        return latest.year + 1, 1
+    return latest.year, latest.month + 1
+
+
+@transaction.atomic
+def regenerate_run(run: PayrollRun) -> dict:
+    """Bring a draft run in line with current employee records.
+
+    Refreshes each payslip's salary snapshot, adds payslips for employees who
+    became active, and removes payslips of employees who are no longer active.
+    Overtime, bonus and advances already entered are kept.
+    """
+    if not run.is_draft:
+        raise ValueError('Only draft runs can be regenerated.')
+    active = {e.pk: e for e in Employee.objects.filter(is_active=True)}
+    removed, _ = run.payslips.exclude(employee_id__in=list(active)).delete()
+    updated = 0
+    existing = set()
+    for slip in run.payslips.select_related('employee'):
+        emp = slip.employee
+        existing.add(emp.pk)
+        slip.base = emp.base_salary
+        slip.allowance = emp.allowance_monthly
+        slip.dependents = emp.dependents
+        slip.nssf_member = emp.nssf_member
+        slip.is_resident = emp.is_resident
+        apply_payslip_math(slip)
+        slip.save()
+        updated += 1
+    added = []
+    for pk, emp in active.items():
+        if pk in existing:
+            continue
+        slip = Payslip(
+            run=run, employee=emp, base=emp.base_salary,
+            allowance=emp.allowance_monthly, dependents=emp.dependents,
+            nssf_member=emp.nssf_member, is_resident=emp.is_resident,
+        )
+        apply_payslip_math(slip)
+        added.append(slip)
+    Payslip.objects.bulk_create(added)
+    return {'updated': updated, 'added': len(added), 'removed': removed}

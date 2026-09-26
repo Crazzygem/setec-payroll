@@ -13,4 +13,7 @@ urlpatterns = [
     path('<int:pk>/export/xlsx/', views.export_xlsx, name='export_xlsx'),
     path('<int:pk>/', views.run_detail, name='run_detail'),
     path('<int:pk>/finalize/', views.run_finalize, name='run_finalize'),
+    path('<int:pk>/extras/', views.run_extras_update, name='run_extras_update'),
+    path('<int:pk>/regenerate/', views.run_regenerate, name='run_regenerate'),
+    path('<int:pk>/delete/', views.run_delete, name='run_delete'),
 ]

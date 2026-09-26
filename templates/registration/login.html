@@ -37,6 +37,12 @@
       font-size: 1.4rem;
       margin: 0 auto 0.75rem;
     }
+    .btn-accent { background: #047857; color: #fff; }
+    .btn-accent:hover { background: #065f46; color: #fff; }
+    .form-control:focus { border-color: #047857; box-shadow: none; outline: 2px solid #047857; outline-offset: 1px; }
+    a:focus-visible, button:focus-visible, .btn:focus-visible {
+      outline: 2px solid #047857; outline-offset: 2px; box-shadow: none;
+    }
     @media (pointer: coarse) {
       .btn { min-height: 44px; }
     }
@@ -45,25 +51,49 @@
 <body>
   <div class="login-card">
     <div class="brand-badge"><i class="bi bi-wallet2"></i></div>
-    <h3 class="text-center mb-1" style="font-weight:700">Payroll KH</h3>
-    <p class="text-center text-muted small mb-4">Payroll Management System</p>
+    <h1 class="h3 text-center mb-1" style="font-weight:700">Payroll KH</h1>
+    <p class="text-center text-muted small mb-4">Sign in to run payroll, payslips and GDT filings.</p>
 
     {% if form.errors %}
-      <div class="alert alert-danger py-2 small">Invalid username or password.</div>
+      <div class="alert alert-danger py-2 small" role="alert" id="login-error">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        Username or password is incorrect. Both are case-sensitive.</div>
     {% endif %}
 
     <form method="post" action="{% url 'login' %}">
       {% csrf_token %}
       <div class="mb-3">
         <label class="form-label small fw-semibold" for="id_username">Username</label>
-        <input type="text" name="username" id="id_username" class="form-control" autofocus required>
+        <input type="text" name="username" id="id_username" class="form-control{% if form.errors %} is-invalid{% endif %}"
+               value="{{ form.username.value|default_if_none:'' }}" autocomplete="username"
+               autocapitalize="none" spellcheck="false" autofocus required
+               {% if form.errors %}aria-describedby="login-error"{% endif %}>
       </div>
       <div class="mb-4">
         <label class="form-label small fw-semibold" for="id_password">Password</label>
-        <input type="password" name="password" id="id_password" class="form-control" required>
+        <div class="input-group">
+          <input type="password" name="password" id="id_password" class="form-control{% if form.errors %} is-invalid{% endif %}"
+                 autocomplete="current-password" required
+                 {% if form.errors %}aria-describedby="login-error"{% endif %}>
+          <button class="btn btn-outline-secondary" type="button" id="togglePassword"
+                  aria-controls="id_password" aria-pressed="false">Show</button>
+        </div>
       </div>
-      <button type="submit" class="btn btn-accent w-100" style="background:#047857;color:#fff">Sign in</button>
+      <button type="submit" class="btn btn-accent w-100">Sign in</button>
     </form>
+    <script>
+      (function () {
+        var btn = document.getElementById('togglePassword');
+        var input = document.getElementById('id_password');
+        btn.addEventListener('click', function () {
+          var show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          btn.textContent = show ? 'Hide' : 'Show';
+          btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+          input.focus();
+        });
+      })();
+    </script>
   </div>
 </body>
 </html>

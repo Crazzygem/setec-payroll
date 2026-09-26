@@ -42,6 +42,27 @@ class PayrollRun(models.Model):
             return date(self.year + 1, 1, 20)
         return date(self.year, self.month + 1, 20)
 
+    @property
+    def days_until_due(self):
+        """Days from today to the GDT deadline; negative once it has passed."""
+        from django.utils import timezone
+        return (self.gdt_due_date - timezone.localdate()).days
+
+    @property
+    def days_overdue(self):
+        return max(-self.days_until_due, 0)
+
+    @property
+    def deadline_state(self):
+        """'overdue' only for a draft past the deadline: the app does not track
+        whether tax was paid, so a finalized run is never flagged."""
+        days = self.days_until_due
+        if days < 0:
+            return 'overdue' if self.is_draft else 'past'
+        if days <= 5:
+            return 'soon'
+        return 'open'
+
     def __str__(self):
         return f'{self.period_label} ({self.get_status_display()})'
 

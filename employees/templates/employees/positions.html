@@ -6,10 +6,11 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
   <form class="d-flex" method="get" action="{% url 'employees:position_list' %}" role="search">
-    <input class="form-control form-control-sm" style="width:220px" type="search"
-           name="q" value="{{ q }}" placeholder="Search positions">
-    <button class="btn btn-sm btn-outline-secondary ms-2" type="submit">
-      <i class="bi bi-search"></i></button>
+    <input class="form-control form-control-sm" style="width:min(220px, 55vw)" type="search"
+           name="q" value="{{ q }}" aria-label="Search" placeholder="Search positions">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <button class="btn btn-sm btn-outline-secondary ms-2" type="submit" aria-label="Search">
+      <i class="bi bi-search" aria-hidden="true"></i></button>
     {% if q %}
       <a class="btn btn-sm btn-outline-secondary ms-1"
          href="{% url 'employees:position_list' %}">Clear</a>
@@ -20,15 +21,24 @@
   </a>
 </div>
 
+{% if run %}<p class="text-muted small mb-2">Payroll columns show the {{ run.period_label }} run. Select a column heading to sort.</p>{% endif %}
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th>Position</th>
-          <th class="text-end">Members</th>
-          <th class="text-end">Gross payroll</th>
-          <th class="text-end">Net payroll</th>
+          <th {% if sort == 'name' %}aria-sort="ascending"{% endif %}>
+            <a class="sort-link {% if sort == 'name' %}active{% endif %}" href="?sort=name{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Position{% if sort == 'name' %} <i class="bi bi-arrow-up-short" aria-hidden="true"></i>{% endif %}</a>
+          </th>
+          <th class="text-end" {% if sort == 'members' %}aria-sort="descending"{% endif %}>
+            <a class="sort-link {% if sort == 'members' %}active{% endif %}" href="?sort=members{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Members{% if sort == 'members' %} <i class="bi bi-arrow-down-short" aria-hidden="true"></i>{% endif %}</a>
+          </th>
+          <th class="text-end" {% if sort == 'gross' %}aria-sort="descending"{% endif %}>
+            <a class="sort-link {% if sort == 'gross' %}active{% endif %}" href="?sort=gross{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Gross payroll{% if sort == 'gross' %} <i class="bi bi-arrow-down-short" aria-hidden="true"></i>{% endif %}</a>
+          </th>
+          <th class="text-end" {% if sort == 'net' %}aria-sort="descending"{% endif %}>
+            <a class="sort-link {% if sort == 'net' %}active{% endif %}" href="?sort=net{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Net payroll{% if sort == 'net' %} <i class="bi bi-arrow-down-short" aria-hidden="true"></i>{% endif %}</a>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -60,14 +70,14 @@
 
 {# ---------- Add modal ---------- #}
 {% if modal == 'new' %}
-<div class="modal fade show d-block" tabindex="-1" role="dialog">
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post" action="{% url 'employees:position_create' %}">
         {% csrf_token %}
         <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Add Position</h6>
-          <a class="btn-close" href="{% url 'employees:position_list' %}"></a>
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Add Position</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'employees:position_list' %}"></a>
         </div>
         <div class="modal-body">
           {% if form.non_field_errors %}
@@ -92,14 +102,14 @@
 
 {# ---------- Rename modal ---------- #}
 {% if modal == 'edit' and target %}
-<div class="modal fade show d-block" tabindex="-1" role="dialog">
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post" action="{% url 'employees:position_update' target.pk %}">
         {% csrf_token %}
         <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Edit Position · {{ target.name }}</h6>
-          <a class="btn-close" href="{% url 'employees:position_list' %}"></a>
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Edit Position · {{ target.name }}</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'employees:position_list' %}"></a>
         </div>
         <div class="modal-body">
           {% if form.non_field_errors %}
@@ -151,14 +161,14 @@
 
 {# ---------- Delete modal ---------- #}
 {% if modal == 'delete' and target %}
-<div class="modal fade show d-block" tabindex="-1" role="dialog">
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post" action="{% url 'employees:position_delete' target.pk %}">
         {% csrf_token %}
         <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Delete Position</h6>
-          <a class="btn-close" href="{% url 'employees:position_list' %}"></a>
+          <h2 class="modal-title h6 fw-semibold" id="modalTitle">Delete Position</h2>
+          <a class="btn-close" aria-label="Close" href="{% url 'employees:position_list' %}"></a>
         </div>
         <div class="modal-body">
           <p class="mb-1">Delete <strong>{{ target.name }}</strong>?</p>

@@ -9,6 +9,7 @@ urlpatterns = [
     path('new/', views.employee_create, name='create'),
     path('<int:pk>/edit/', views.employee_edit, name='edit'),
     path('<int:pk>/delete/', views.employee_delete, name='delete'),
+    path('<int:pk>/deactivate/', views.employee_deactivate, name='deactivate'),
     path('departments/', views.department_list, name='department_list'),
     path('departments/new/', views.department_create, name='department_create'),
     path('departments/<int:pk>/edit/', views.department_update,

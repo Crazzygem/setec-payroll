@@ -22,12 +22,18 @@
           Withheld salary tax of
           <strong>{{ run_summary.tax|floatformat:0|intcomma }} KHR</strong>
           is due to GDT by
-          <strong>{{ run_summary.run.gdt_due_date|date:'d M Y' }}</strong>.
+          <strong>{{ run_summary.run.gdt_due_date|date:'d M Y' }}</strong>
+          {% with state=run_summary.run.deadline_state %}
+            {% if state == 'overdue' %}<span class="badge text-bg-danger ms-1">Overdue by {{ run_summary.run.days_overdue }} day{{ run_summary.run.days_overdue|pluralize }}</span>
+            {% elif state == 'past' %}(date passed)
+            {% elif run_summary.run.days_until_due == 0 %}<span class="badge text-bg-warning ms-1">Due today</span>
+            {% else %}<span class="badge {% if state == 'soon' %}text-bg-warning{% else %}bg-white text-success-emphasis{% endif %} ms-1">{{ run_summary.run.days_until_due }} day{{ run_summary.run.days_until_due|pluralize }} left</span>{% endif %}
+          {% endwith %}
         </div>
       </div>
       <div class="text-md-end">
         <div class="stat-label">Net paid</div>
-        <div class="fs-4 fw-bold">{{ run_summary.net|floatformat:0|intcomma }} KHR</div>
+        <div class="fs-4 fw-bold text-nowrap">{{ run_summary.net|floatformat:0|intcomma }} <span class="unit">KHR</span></div>
         <a class="btn btn-sm hero-cta mt-2" href="{% url 'payroll:run_detail' run_summary.run.pk %}">
           Open {{ run_summary.run.period_label }}</a>
       </div>
@@ -45,34 +51,39 @@
 {% endif %}
 
 <div class="row g-3 mb-3">
-  <div class="col-6 col-md-3">
+  <div class="col-12 col-sm-6 col-lg-4">
     <div class="card stat-card h-100"><div class="card-body py-2 px-3">
       <div class="stat-label">Active employees</div>
       <div class="stat-value">{{ active_employees }}</div>
-      <div class="text-muted" style="font-size:0.72rem">{{ employee_total }} records total</div>
+      <div class="text-muted small">{{ employee_total }} records in total</div>
     </div></div>
   </div>
-  <div class="col-6 col-md-3">
+  {% if run_summary %}
+  <div class="col-12 col-sm-6 col-lg-4">
     <div class="card stat-card h-100"><div class="card-body py-2 px-3">
-      <div class="stat-label">Departments</div>
-      <div class="stat-value">{{ department_total }}</div>
-      <div class="text-muted" style="font-size:0.72rem">under Organization</div>
+      <div class="stat-label">Employer cost, {{ run_summary.run.period_label }}</div>
+      <div class="stat-value">{{ run_summary.employer_cost|floatformat:0|intcomma }} <span class="unit">KHR</span></div>
+      <div class="text-muted small">Gross payroll plus employer NSSF</div>
     </div></div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-12 col-lg-4">
     <div class="card stat-card h-100"><div class="card-body py-2 px-3">
-      <div class="stat-label">Positions</div>
-      <div class="stat-value">{{ position_total }}</div>
-      <div class="text-muted" style="font-size:0.72rem">job titles in use</div>
+      <div class="stat-label">Net pay change</div>
+      {% if run_summary.prev_run %}
+        <div class="stat-value">
+          {% if run_summary.net_change > 0 %}+{% elif run_summary.net_change < 0 %}&minus;{% endif %}{{ run_summary.net_change|stringformat:'d'|cut:'-'|intcomma }} KHR
+        </div>
+        <div class="text-muted small">
+          {{ run_summary.run.period_label }} against {{ run_summary.prev_run.period_label }}{% if run_summary.net_change_pct is not None %}
+          ({% if run_summary.net_change_pct > 0 %}+{% endif %}{{ run_summary.net_change_pct }}%){% endif %}
+        </div>
+      {% else %}
+        <div class="stat-value text-muted">None yet</div>
+        <div class="text-muted small">Shown once there are two payroll runs to compare.</div>
+      {% endif %}
     </div></div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
-      <div class="stat-label">Draft runs</div>
-      <div class="stat-value">{{ draft_runs|length }}</div>
-      <div class="text-muted" style="font-size:0.72rem">awaiting finalize</div>
-    </div></div>
-  </div>
+  {% endif %}
 </div>
 
 {% if draft_runs %}
@@ -84,6 +95,7 @@
     {{ draft_runs|length }} payroll runs are still drafts.
   {% endif %}
   Review and finalize before the GDT deadline.
+  {% if draft_runs|length == 1 %}<a class="alert-link" href="{% url 'payroll:run_detail' draft_runs.0.pk %}">Open {{ draft_runs.0.period_label }}</a>{% else %}<a class="alert-link" href="{% url 'payroll:run_list' %}">See payroll runs</a>{% endif %}
 </div>
 {% endif %}
 
@@ -92,10 +104,11 @@
   <div class="col-12 col-lg-5">
     <div class="card h-100">
       <div class="card-body">
-        <h5 class="mb-1">{{ run_summary.run.period_label }} cost breakdown</h5>
-        <p class="text-muted small mb-3">Where each ring of gross payroll went, in KHR.</p>
+        <h2 class="card-title-h mb-1">Where {{ run_summary.run.period_label }} gross payroll went</h2>
+        <p class="text-muted small mb-3">Net pay, NSSF, salary tax and advances, in KHR.</p>
         <div class="chart-box">
-          <canvas id="costChart"
+          <canvas id="costChart" role="img"
+                  aria-label="Doughnut chart: {% for l in cost_split.labels %}{{ l }} {% for v in cost_split.values %}{% if forloop.counter == forloop.parentloop.counter %}{{ v|intcomma }} KHR{% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}"
                   data-labels="{{ cost_split.labels|join:'|' }}"
                   data-values="{{ cost_split.values|join:'|' }}"></canvas>
         </div>
@@ -115,10 +128,11 @@
   <div class="col-12 col-lg-7">
     <div class="card h-100">
       <div class="card-body">
-        <h5 class="mb-1">Headcount by department</h5>
+        <h2 class="card-title-h mb-1">Headcount by department</h2>
         <p class="text-muted small mb-3">Employees per department, current records.</p>
         <div class="chart-box">
-          <canvas id="deptChart"
+          <canvas id="deptChart" role="img"
+                  aria-label="Bar chart: {% for l in dept_chart.labels %}{{ l }} {% for v in dept_chart.values %}{% if forloop.counter == forloop.parentloop.counter %}{{ v }}{% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}"
                   data-labels="{{ dept_chart.labels|join:'|' }}"
                   data-values="{{ dept_chart.values|join:'|' }}"></canvas>
         </div>
@@ -130,7 +144,7 @@
 
 <div class="card">
   <div class="card-body">
-    <h5 class="mb-3">Recent payroll runs</h5>
+    <h2 class="card-title-h mb-3">Recent payroll runs</h2>
     <div class="table-responsive">
       <table class="table table-sm align-middle mb-0">
         <thead class="table-light">
@@ -213,7 +227,8 @@
             cutout: '58%',
             plugins: {
               legend: {
-                position: 'right',
+                // Beside the ring on wide cards, under it on phones so the ring keeps its size.
+                position: window.matchMedia('(min-width: 576px)').matches ? 'right' : 'bottom',
                 labels: { color: INK, boxWidth: 12, font: { family: 'IBM Plex Sans' } }
               },
               tooltip: {

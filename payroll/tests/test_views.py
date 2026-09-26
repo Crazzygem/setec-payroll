@@ -213,3 +213,152 @@ class PayrollRunTests(TestCase):
         self.assertIsNone(response.context['edit_form'])
         response = self.client.get(url)
         self.assertNotContains(response, 'Extras')
+
+
+class RunWorkflowTests(TestCase):
+    """Bulk extras editor, regenerate, delete draft, next period, prev/next."""
+
+    def setUp(self):
+        User.objects.create_user('hr', password='hrpass123')
+        self.client.login(username='hr', password='hrpass123')
+        self.e1 = make_employee()
+        self.e2 = make_employee(emp_id='EMP002', first_name='Vandy')
+        self.client.post(reverse('payroll:run_create'), {'year': 2026, 'month': 9})
+        self.run = PayrollRun.objects.get()
+
+    def formset_data(self, values):
+        """values: {emp_id: (overtime, bonus, advances)}; others keep current."""
+        slips = list(self.run.payslips.order_by('employee__emp_id'))
+        data = {
+            'form-TOTAL_FORMS': len(slips), 'form-INITIAL_FORMS': len(slips),
+            'form-MIN_NUM_FORMS': 0, 'form-MAX_NUM_FORMS': 1000,
+        }
+        for i, slip in enumerate(slips):
+            ot, bonus, adv = values.get(
+                slip.employee.emp_id, (slip.overtime, slip.bonus, slip.advances))
+            data.update({
+                f'form-{i}-id': slip.pk, f'form-{i}-overtime': ot,
+                f'form-{i}-bonus': bonus, f'form-{i}-advances': adv,
+            })
+        return data
+
+    def test_bulk_extras_recalculates_changed_rows(self):
+        url = reverse('payroll:run_extras_update', args=[self.run.pk])
+        response = self.client.post(url, self.formset_data({'EMP001': (100000, 0, 0)}))
+        self.assertRedirects(response, reverse('payroll:run_detail', args=[self.run.pk]))
+        slip = self.run.payslips.get(employee=self.e1)
+        # Same figures as test_extras_edit_recalculates_payslip.
+        self.assertEqual(slip.gross, Decimal('2100000'))
+        self.assertEqual(slip.net, Decimal('2027200'))
+        other = self.run.payslips.get(employee=self.e2)
+        self.assertEqual(other.net, Decimal('1937000'))
+
+    def test_bulk_extras_rejects_negative_and_keeps_input(self):
+        url = reverse('payroll:run_extras_update', args=[self.run.pk])
+        response = self.client.post(url, self.formset_data({'EMP001': (-5, 0, 0)}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'is-invalid')
+        self.assertContains(response, 'value="-5"')
+        self.assertEqual(self.run.payslips.get(employee=self.e1).overtime, 0)
+
+    def test_bulk_extras_cannot_create_payslips(self):
+        data = self.formset_data({})
+        data['form-TOTAL_FORMS'] = 3
+        data.update({'form-2-id': '', 'form-2-overtime': 5, 'form-2-bonus': 0,
+                     'form-2-advances': 0})
+        url = reverse('payroll:run_extras_update', args=[self.run.pk])
+        response = self.client.post(url, data)
+        self.assertIn(response.status_code, (200, 302))
+        self.assertEqual(self.run.payslips.count(), 2)
+
+    def test_bulk_extras_refused_on_finalized_run(self):
+        self.client.post(reverse('payroll:run_finalize', args=[self.run.pk]))
+        url = reverse('payroll:run_extras_update', args=[self.run.pk])
+        self.client.post(url, self.formset_data({'EMP001': (100000, 0, 0)}))
+        self.assertEqual(self.run.payslips.get(employee=self.e1).overtime, 0)
+
+    def test_draft_detail_renders_inputs_and_totals_row(self):
+        response = self.client.get(reverse('payroll:run_detail', args=[self.run.pk]))
+        self.assertContains(response, 'name="form-0-overtime"')
+        self.assertContains(response, '<tfoot')
+        self.assertNotContains(response, 'onsubmit="return confirm')
+
+    def test_regenerate_keeps_extras_and_syncs_employees(self):
+        slip = self.run.payslips.get(employee=self.e1)
+        slip.bonus = 50000
+        slip.save()
+        self.e1.base_salary = 2500000
+        self.e1.save()
+        self.e2.is_active = False
+        self.e2.save()
+        e3 = make_employee(emp_id='EMP003', first_name='Sokha')
+        self.client.post(reverse('payroll:run_regenerate', args=[self.run.pk]))
+        slip.refresh_from_db()
+        self.assertEqual(slip.bonus, Decimal('50000'))
+        self.assertEqual(slip.base, Decimal('2500000'))
+        self.assertEqual(slip.gross, Decimal('2550000'))
+        emp_ids = set(self.run.payslips.values_list('employee_id', flat=True))
+        self.assertEqual(emp_ids, {self.e1.pk, e3.pk})
+
+    def test_delete_draft_only(self):
+        self.client.post(reverse('payroll:run_finalize', args=[self.run.pk]))
+        self.client.post(reverse('payroll:run_delete', args=[self.run.pk]))
+        self.assertTrue(PayrollRun.objects.filter(pk=self.run.pk).exists())
+        self.run.status = PayrollRun.STATUS_DRAFT
+        self.run.save()
+        response = self.client.post(reverse('payroll:run_delete', args=[self.run.pk]))
+        self.assertRedirects(response, reverse('payroll:run_list'))
+        self.assertFalse(PayrollRun.objects.filter(pk=self.run.pk).exists())
+
+    def test_new_run_form_defaults_to_month_after_latest(self):
+        response = self.client.get(reverse('payroll:run_list') + '?new=1')
+        form = response.context['form']
+        self.assertEqual(form.initial, {'year': 2026, 'month': '10'})
+        PayrollRun.objects.create(year=2026, month=12)
+        response = self.client.get(reverse('payroll:run_list') + '?new=1')
+        self.assertEqual(response.context['form'].initial, {'year': 2027, 'month': '1'})
+
+    def test_payslip_prev_next_links(self):
+        first, second = self.run.payslips.order_by('employee__emp_id')
+        response = self.client.get(reverse('payroll:payslip_view', args=[first.pk]))
+        self.assertIsNone(response.context['prev_slip'])
+        self.assertEqual(response.context['next_slip'][0], second.pk)
+        self.assertContains(response, reverse('payroll:run_detail', args=[self.run.pk]))
+        self.assertNotContains(response, 'history.back')
+        response = self.client.get(reverse('payroll:payslip_view', args=[second.pk]))
+        self.assertEqual(response.context['prev_slip'][0], first.pk)
+        self.assertIsNone(response.context['next_slip'])
+
+    def test_deadline_states(self):
+        from unittest import mock
+        with mock.patch('django.utils.timezone.localdate', return_value=date(2026, 10, 25)):
+            self.assertEqual(self.run.deadline_state, 'overdue')
+            self.assertEqual(self.run.days_overdue, 5)
+            self.run.status = PayrollRun.STATUS_FINALIZED
+            self.assertEqual(self.run.deadline_state, 'past')
+        with mock.patch('django.utils.timezone.localdate', return_value=date(2026, 10, 17)):
+            self.assertEqual(self.run.deadline_state, 'soon')
+        with mock.patch('django.utils.timezone.localdate', return_value=date(2026, 10, 1)):
+            self.assertEqual(self.run.deadline_state, 'open')
+
+    def test_new_workflow_endpoints_require_login_and_post(self):
+        for name in ('run_extras_update', 'run_regenerate', 'run_delete'):
+            url = reverse(f'payroll:{name}', args=[self.run.pk])
+            self.assertEqual(self.client.get(url).status_code, 405)
+        self.client.logout()
+        self.client.post(reverse('payroll:run_delete', args=[self.run.pk]))
+        self.assertTrue(PayrollRun.objects.filter(pk=self.run.pk).exists())
+
+
+class RunOrderingTests(TestCase):
+    def test_run_lists_newest_period_first(self):
+        User.objects.create_user('hr', password='hrpass123')
+        self.client.login(username='hr', password='hrpass123')
+        make_employee()
+        for year, month in ((2026, 1), (2026, 9), (2025, 12), (2026, 8)):
+            self.client.post(reverse('payroll:run_create'), {'year': year, 'month': month})
+        expected = [(2026, 9), (2026, 8), (2026, 1), (2025, 12)]
+        runs = self.client.get(reverse('payroll:run_list')).context['runs']
+        self.assertEqual([(r.year, r.month) for r in runs], expected)
+        recent = self.client.get(reverse('home')).context['recent_runs']
+        self.assertEqual([(r.year, r.month) for r in recent], expected)

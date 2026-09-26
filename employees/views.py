@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -18,12 +19,27 @@ def _parse_pk(value):
         return None
 
 
+EMPLOYEE_PAGE_SIZE = 25
+
+
+def _employee_filters(request):
+    """Read list filters from the query string. Status defaults to 'active' so
+    inactive records do not mix into the everyday view."""
+    return {
+        'q': request.GET.get('q', '').strip(),
+        'dept': _parse_pk(request.GET.get('dept')),
+        'status': request.GET.get('status', 'active'),
+        'contract': request.GET.get('contract', ''),
+    }
+
+
 def _render_list(request, *, modal=None, form=None, target=None, status=200):
     """Render the employee list. `modal` decides which modal is open:
     'new' | 'edit' | 'delete' | None (server-driven, no JS state)."""
-    q = request.GET.get('q', '').strip()
-    employees = Employee.objects.all()
-    if q:
+    f = _employee_filters(request)
+    employees = Employee.objects.select_related('position', 'department')
+    if f['q']:
+        q = f['q']
         employees = employees.filter(
             Q(emp_id__icontains=q)
             | Q(first_name__icontains=q)
@@ -31,15 +47,44 @@ def _render_list(request, *, modal=None, form=None, target=None, status=200):
             | Q(position__name__icontains=q)
             | Q(department__name__icontains=q)
         )
+    if f['dept']:
+        employees = employees.filter(department_id=f['dept'])
+    if f['status'] == 'active':
+        employees = employees.filter(is_active=True)
+    elif f['status'] == 'inactive':
+        employees = employees.filter(is_active=False)
+    if f['contract'] in Employee.ContractType.values:
+        employees = employees.filter(contract_type=f['contract'])
+
+    page = Paginator(employees, EMPLOYEE_PAGE_SIZE).get_page(request.GET.get('page'))
+
+    # Query strings that keep the current filters: `keep` (with the page) for
+    # rows and modal close links, `keep_filters` (without it) for page links.
+    keep = request.GET.copy()
+    for key in ('new', 'edit', 'delete'):
+        keep.pop(key, None)
+    keep_filters = keep.copy()
+    keep_filters.pop('page', None)
+    filters_active = bool(
+        f['q'] or f['dept'] or f['contract'] or f['status'] != 'active'
+    )
     return render(
         request,
         'employees/list.html',
         {
-            'employees': employees,
-            'q': q,
+            'employees': page.object_list,
+            'page': page,
+            'q': f['q'],
+            'filters': f,
+            'filters_active': filters_active,
+            'keep': keep.urlencode(),
+            'keep_filters': keep_filters.urlencode(),
+            'departments': Department.objects.all(),
+            'contract_choices': Employee.ContractType.choices,
             'modal': modal,
             'form': form or EmployeeForm(),
             'target': target,
+            'target_has_payslips': bool(target and target.payslips.exists()),
         },
         status=status,
     )
@@ -97,8 +142,29 @@ def employee_edit(request, pk):
 def employee_delete(request, pk):
     target = get_object_or_404(Employee, pk=pk)
     emp_id = target.emp_id
-    target.delete()
+    try:
+        target.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f'Employee {emp_id} has payslips and cannot be deleted. '
+            'Deactivate them instead to keep the payroll history.',
+        )
+        return redirect('employees:list')
     messages.success(request, f'Employee {emp_id} deleted.')
+    return redirect('employees:list')
+
+
+@login_required
+@require_POST
+def employee_deactivate(request, pk):
+    target = get_object_or_404(Employee, pk=pk)
+    target.is_active = False
+    target.save(update_fields=['is_active'])
+    messages.success(
+        request,
+        f'Employee {target.emp_id} deactivated. They are left out of new payroll runs.',
+    )
     return redirect('employees:list')
 
 
@@ -142,6 +208,8 @@ def _org_items(model, group_field, run, q='', sort='name'):
 def _org_render(request, template, model, form, group_field, modal=None, target=None,
                 status=200, q='', sort='name'):
     run = _latest_run()
+    if sort not in SORTS or (run is None and sort in ('gross', 'net')):
+        sort = 'name'
     items = _org_items(model, group_field, run, q, sort)
     members = []
     if target is not None and modal == 'edit':
