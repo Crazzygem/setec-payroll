@@ -49,7 +49,7 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_demo        # 8 employees + Aug/Sep 2026 payroll runs
+python manage.py seed_demo        # 6 employees + Jan-Sep 2026 payroll runs
 python manage.py runserver
 ```
 

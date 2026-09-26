@@ -97,3 +97,19 @@ class DashboardComparisonTests(TestCase):
         august = PayrollRun.objects.get(month=8).payslips.get().net
         self.assertEqual(summary['net_change'], latest.payslips.get().net - august)
         self.assertContains(response, 'September 2026 against August 2026')
+
+
+class SeedDemoTests(TestCase):
+    def test_seed_creates_six_employees_and_jan_to_sep_runs(self):
+        from django.core.management import call_command
+        call_command('seed_demo', stdout=open('/dev/null', 'w'))
+        self.assertEqual(Employee.objects.count(), 6)
+        runs = PayrollRun.objects.order_by('month')
+        self.assertEqual([r.month for r in runs], list(range(1, 10)))
+        self.assertTrue(all(r.status == PayrollRun.STATUS_FINALIZED for r in runs[:8]))
+        self.assertEqual(runs[8].status, PayrollRun.STATUS_DRAFT)
+        self.assertTrue(all(r.payslips.count() == 6 for r in runs))
+        # The July raise is visible from July on, not before.
+        june = runs[5].payslips.get(employee__emp_id='EMP003')
+        july = runs[6].payslips.get(employee__emp_id='EMP003')
+        self.assertEqual((june.base, july.base), (3200000, 3500000))
