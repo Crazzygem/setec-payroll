@@ -16,6 +16,12 @@ Built as the final project for the Python course.
 - **Clickable tables**: every data table opens its record on row click (runs,
   payslips, departments, positions). No action columns; each row keeps a real
   link in its first cell for keyboard and no-JS use.
+- **Organization detail**: departments and positions list member counts, a
+  headcount share bar, and the latest run's gross/net payroll cost per group.
+  Expanding a row lists the members with their position, salary, and status.
+- **Dashboard**: latest run as the focal point (net paid + GDT due date), a cost
+  breakdown doughnut (net pay, NSSF, salary tax, advances) and a headcount-by-
+  department bar, all computed from the database.
 - **Payroll engine**: pure `Decimal` calculations with unit tests:
   - Progressive monthly salary tax (0% / 5% / 10% / 15% / 20%, marginal)
   - NSSF: 2% employee (pension), 5.4% employer (occupational risk + health + pension)
@@ -34,7 +40,7 @@ Built as the final project for the Python course.
 
 ## Tech stack
 
-Python 3.11 · Django 5.2 · SQLite · pandas + openpyxl (exports) · Bootstrap 5 (CDN) · IBM Plex Sans (Google Fonts)
+Python 3.11 · Django 5.2 · SQLite · pandas + openpyxl (exports) · Bootstrap 5 + Chart.js 4.4.7 (CDN, SRI-pinned) · IBM Plex Sans (Google Fonts)
 
 ## Quick start
 
@@ -61,7 +67,7 @@ Open http://127.0.0.1:8000/ and sign in:
 python manage.py test
 ```
 
-52 tests: payroll-engine band boundaries (hand-computed expectations),
+60 tests: payroll-engine band boundaries (hand-computed expectations),
 payslip math, CRUD, run generation, finalize locking, payslip rendering.
 
 ## Calculation rules and sources
@@ -107,7 +113,7 @@ Employer NSSF (5.4%)   =   118,800
 ```
 ├── manage.py
 ├── payroll_project/        # settings, urls
-├── core/                   # dashboard + seed_demo command
+├── core/                   # dashboard (stats + charts) + seed_demo command
 ├── employees/              # Employee/Department/Position models, CRUD views, tests
 ├── payroll/
 │   ├── rules.py            # all rates & assumptions (with sources)

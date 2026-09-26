@@ -4,41 +4,129 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 
+{% if run_summary %}
+{# Focal point: the latest run plus the deadline that governs it. #}
+<div class="card hero-run mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="stat-label">Latest payroll run</div>
+        <div class="d-flex align-items-baseline gap-2 mt-1">
+          <span class="fs-4 fw-bold">{{ run_summary.run.period_label }}</span>
+          <span class="badge {% if run_summary.run.is_draft %}text-bg-warning{% else %}text-bg-success{% endif %}">
+            {{ run_summary.run.get_status_display }}
+          </span>
+        </div>
+        <div class="small mt-2">
+          <i class="bi bi-calendar-event"></i>
+          Withheld salary tax of
+          <strong>{{ run_summary.tax|floatformat:0|intcomma }} KHR</strong>
+          is due to GDT by
+          <strong>{{ run_summary.run.gdt_due_date|date:'d M Y' }}</strong>.
+        </div>
+      </div>
+      <div class="text-md-end">
+        <div class="stat-label">Net paid</div>
+        <div class="fs-4 fw-bold">{{ run_summary.net|floatformat:0|intcomma }}</div>
+        <a class="btn btn-sm btn-light mt-2" href="{% url 'payroll:run_detail' run_summary.run.pk %}">
+          Open {{ run_summary.run.period_label }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card mb-3">
+  <div class="card-body text-center py-4">
+    <p class="mb-2">No payroll run yet.</p>
+    <a class="btn btn-accent btn-sm" href="{% url 'payroll:run_list' %}?new=1">
+      Generate the first payroll run</a>
+  </div>
+</div>
+{% endif %}
+
 <div class="row g-3 mb-3">
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
       <div class="stat-label">Active employees</div>
       <div class="stat-value">{{ active_employees }}</div>
       <div class="text-muted" style="font-size:0.72rem">{{ employee_total }} records total</div>
     </div></div>
   </div>
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
-      <div class="stat-label">Latest run</div>
-      <div class="stat-value" style="font-size:1.05rem">
-        {{ run_summary.run.period_label|default:'-' }}</div>
-      {% if run_summary %}
-        <div class="text-muted" style="font-size:0.72rem">{{ run_summary.run.get_status_display }}</div>
-      {% endif %}
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
+      <div class="stat-label">Departments</div>
+      <div class="stat-value">{{ department_total }}</div>
+      <div class="text-muted" style="font-size:0.72rem">under Organization</div>
     </div></div>
   </div>
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
-      <div class="stat-label">Gross payroll</div>
-      <div class="stat-value">{{ run_summary.gross|floatformat:0|intcomma|default:'-' }}</div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
+      <div class="stat-label">Positions</div>
+      <div class="stat-value">{{ position_total }}</div>
+      <div class="text-muted" style="font-size:0.72rem">job titles in use</div>
     </div></div>
   </div>
-  <div class="col-6 col-md">
-    <div class="card stat-card"><div class="card-body py-2 px-3">
-      <div class="stat-label">Tax withheld</div>
-      <div class="stat-value">{{ run_summary.tax|floatformat:0|intcomma|default:'-' }}</div>
-      {% if run_summary %}
-        <div class="text-muted" style="font-size:0.72rem">due GDT
-          {{ run_summary.run.gdt_due_date|date:'d M Y' }}</div>
-      {% endif %}
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100"><div class="card-body py-2 px-3">
+      <div class="stat-label">Draft runs</div>
+      <div class="stat-value">{{ draft_runs|length }}</div>
+      <div class="text-muted" style="font-size:0.72rem">awaiting finalize</div>
     </div></div>
   </div>
 </div>
+
+{% if draft_runs %}
+<div class="alert alert-warning py-2 small mb-3">
+  <i class="bi bi-exclamation-triangle"></i>
+  {% if draft_runs|length == 1 %}
+    {{ draft_runs.0.period_label }} is still a draft.
+  {% else %}
+    {{ draft_runs|length }} payroll runs are still drafts.
+  {% endif %}
+  Review and finalize before the GDT deadline.
+</div>
+{% endif %}
+
+{% if cost_split %}
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-5">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="mb-1">{{ run_summary.run.period_label }} cost breakdown</h5>
+        <p class="text-muted small mb-3">Where each ring of gross payroll went, in KHR.</p>
+        <div class="chart-box">
+          <canvas id="costChart"
+                  data-labels="{{ cost_split.labels|join:'|' }}"
+                  data-values="{{ cost_split.values|join:'|' }}"></canvas>
+        </div>
+        <div class="row g-2 mt-2 small">
+          <div class="col-6 d-flex justify-content-between">
+            <span class="text-muted">Gross payroll</span>
+            <strong class="ms-2">{{ run_summary.gross|floatformat:0|intcomma }}</strong>
+          </div>
+          <div class="col-6 d-flex justify-content-between">
+            <span class="text-muted">Employer NSSF cost</span>
+            <strong class="ms-2">{{ run_summary.employer|floatformat:0|intcomma }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-7">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="mb-1">Headcount by department</h5>
+        <p class="text-muted small mb-3">Employees per department, current records.</p>
+        <div class="chart-box">
+          <canvas id="deptChart"
+                  data-labels="{{ dept_chart.labels|join:'|' }}"
+                  data-values="{{ dept_chart.values|join:'|' }}"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="card">
   <div class="card-body">
@@ -76,4 +164,114 @@
     </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+{# Pinned version with SRI: a CDN compromise cannot inject script here. #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+        integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC"
+        crossorigin="anonymous"></script>
+<script>
+  (function () {
+    if (typeof Chart === 'undefined') return;
+
+    // Emerald family from DESIGN.md; the cost slices stay in one hue family so
+    // no extra palette colour is introduced (R-29).
+    var INK = '#111827';
+    var MUTED = '#6B7280';
+    var GRID = 'rgba(17, 24, 39, 0.08)';
+    var COST_COLORS = ['#047857', '#059669', '#34d399', '#d1fae5'];
+
+    function series(el) {
+      return {
+        labels: (el.dataset.labels || '').split('|').filter(Boolean),
+        values: (el.dataset.values || '').split('|')
+          .map(function (v) { return Number(v); })
+          .filter(function (v) { return !isNaN(v); })
+      };
+    }
+
+    var costEl = document.getElementById('costChart');
+    if (costEl) {
+      var cost = series(costEl);
+      if (cost.values.some(function (v) { return v > 0; })) {
+        new Chart(costEl, {
+          type: 'doughnut',
+          data: {
+            labels: cost.labels,
+            datasets: [{
+              data: cost.values,
+              backgroundColor: COST_COLORS,
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: { color: INK, boxWidth: 12, font: { family: 'IBM Plex Sans' } }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    var total = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                    var pct = total ? Math.round((ctx.parsed / total) * 100) : 0;
+                    return ctx.label + ': ' + ctx.parsed.toLocaleString('en-US')
+                      + ' KHR (' + pct + '%)';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    var deptEl = document.getElementById('deptChart');
+    if (deptEl) {
+      var dept = series(deptEl);
+      if (dept.values.length) {
+        new Chart(deptEl, {
+          type: 'bar',
+          data: {
+            labels: dept.labels,
+            datasets: [{
+              label: 'Employees',
+              data: dept.values,
+              backgroundColor: '#047857',
+              borderRadius: 3,
+              maxBarThickness: 48
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: { label: function (c) { return c.parsed.y + ' employees'; } }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: MUTED, font: { family: 'IBM Plex Sans' } },
+                grid: { display: false }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { color: MUTED, precision: 0, font: { family: 'IBM Plex Sans' } },
+                grid: { color: GRID }
+              }
+            }
+          }
+        });
+      }
+    }
+  })();
+</script>
 {% endblock %}

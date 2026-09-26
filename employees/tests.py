@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
+from payroll.models import PayrollRun
+
 from .models import Department, Employee, Position
 
 
@@ -196,16 +198,23 @@ class OrganizationTests(TestCase):
         self.assertTrue(Position.objects.filter(pk=in_use.pk).exists())
         self.assertContains(response, 'employees still use it')
 
-    def test_department_rows_clickable_and_edit_renames(self):
+    def test_department_rows_expand_members_and_rename(self):
         department = Department.objects.create(name='IT')
+        make_employee()
         response = self.client.get(reverse('employees:department_list'))
-        self.assertContains(response, f'data-href="?edit={department.pk}')
+        self.assertContains(response, f'data-href="?show={department.pk}')
         self.assertNotContains(response, '>Actions<')
+
+        # Expanded row lists the members, with rename and delete inside it
         response = self.client.get(
-            reverse('employees:department_list') + f'?edit={department.pk}'
+            reverse('employees:department_list') + f'?show={department.pk}'
         )
-        self.assertEqual(response.context['modal'], 'edit')
+        self.assertEqual(response.context['expanded'], department.pk)
+        self.assertEqual([m.emp_id for m in response.context['members']], ['EMP001'])
+        self.assertContains(response, 'Dara')
+        self.assertContains(response, f'?edit={department.pk}')
         self.assertContains(response, f'?delete={department.pk}')
+
         response = self.client.post(
             reverse('employees:department_update', args=[department.pk]),
             {'name': 'Information Tech'},
@@ -214,14 +223,15 @@ class OrganizationTests(TestCase):
         department.refresh_from_db()
         self.assertEqual(department.name, 'Information Tech')
 
-    def test_position_rows_clickable_and_edit_renames(self):
+    def test_position_rows_expand_members_and_rename(self):
         position = Position.objects.create(name='Analyst')
         response = self.client.get(reverse('employees:position_list'))
-        self.assertContains(response, f'data-href="?edit={position.pk}')
+        self.assertContains(response, f'data-href="?show={position.pk}')
         response = self.client.get(
-            reverse('employees:position_list') + f'?edit={position.pk}'
+            reverse('employees:position_list') + f'?show={position.pk}'
         )
-        self.assertEqual(response.context['modal'], 'edit')
+        self.assertEqual(response.context['expanded'], position.pk)
+        self.assertContains(response, f'?edit={position.pk}')
         response = self.client.post(
             reverse('employees:position_update', args=[position.pk]),
             {'name': 'Senior Analyst'},
@@ -229,3 +239,24 @@ class OrganizationTests(TestCase):
         self.assertRedirects(response, reverse('employees:position_list'))
         position.refresh_from_db()
         self.assertEqual(position.name, 'Senior Analyst')
+
+    def test_department_page_shows_run_cost_and_search(self):
+        make_employee()
+        self.client.post(reverse('payroll:run_create'), {'year': 2026, 'month': 9})
+        run = PayrollRun.objects.get(year=2026, month=9)
+        response = self.client.get(reverse('employees:department_list'))
+        department = Department.objects.get(name='IT')
+        self.assertEqual(response.context['items'].get(pk=department.pk).gross_total,
+                         run.payslips.get().gross)
+
+        response = self.client.get(reverse('employees:department_list') + '?q=zzz')
+        self.assertEqual(len(response.context['items']), 0)
+        self.assertContains(response, 'Clear the search')
+
+    def test_department_members_expansion_handles_empty_department(self):
+        empty = Department.objects.create(name='Legal')
+        response = self.client.get(
+            reverse('employees:department_list') + f'?show={empty.pk}'
+        )
+        self.assertEqual(response.context['members'], [])
+        self.assertContains(response, 'No employees in this department')

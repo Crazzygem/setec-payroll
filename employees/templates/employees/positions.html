@@ -1,9 +1,20 @@
 {% extends 'layouts/base.html' %}
+{% load humanize %}
 {% block title %}Positions{% endblock %}
 {% block page_title %}Positions{% endblock %}
 {% block content %}
 
-<div class="d-flex justify-content-end mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
+  <form class="d-flex" method="get" action="{% url 'employees:position_list' %}" role="search">
+    <input class="form-control form-control-sm" style="width:220px" type="search"
+           name="q" value="{{ q }}" placeholder="Search positions">
+    <button class="btn btn-sm btn-outline-secondary ms-2" type="submit">
+      <i class="bi bi-search"></i></button>
+    {% if q %}
+      <a class="btn btn-sm btn-outline-secondary ms-1"
+         href="{% url 'employees:position_list' %}">Clear</a>
+    {% endif %}
+  </form>
   <a class="btn btn-accent btn-sm" href="?new=1">
     <i class="bi bi-plus-lg"></i> Add Position
   </a>
@@ -15,21 +26,67 @@
       <thead class="table-light">
         <tr>
           <th>Position</th>
-          <th class="text-end">Employees</th>
+          <th class="text-end">Members</th>
+          <th class="text-end">Gross payroll</th>
+          <th class="text-end">Net payroll</th>
         </tr>
       </thead>
       <tbody>
         {% for p in items %}
-        <tr data-href="?edit={{ p.pk }}">
+        <tr data-href="?show={{ p.pk }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">
           <td class="fw-semibold">
-            <a href="?edit={{ p.pk }}">{{ p.name }}</a>
+            <a href="?show={{ p.pk }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">{{ p.name }}</a>
           </td>
-          <td class="text-end">{{ p.count }}</td>
+          <td class="text-end">
+            <span class="d-inline-flex align-items-center gap-2">
+              <span class="org-bar" style="--w:{% widthratio p.count active_total 100 %}%"
+                    role="img" aria-label="{{ p.count }} of {{ active_total }} employees"></span>
+              <span>{{ p.count }}</span>
+            </span>
+          </td>
+          <td class="text-end">{{ p.gross_total|floatformat:0|intcomma|default:'-' }}</td>
+          <td class="text-end">{{ p.net_total|floatformat:0|intcomma|default:'-' }}</td>
         </tr>
+        {% if expanded == p.pk %}
+        <tr class="org-members">
+          <td colspan="4">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+              <div class="small text-muted">
+                {% if members %}
+                  {% for m in members %}
+                    <span class="d-inline-block me-3 mb-1">
+                      <strong class="text-body">{{ m.emp_id }}</strong>
+                      {{ m.full_name }}
+                      <span class="text-muted">· {{ m.position.name }}</span>
+                      · {{ m.base_salary|floatformat:0|intcomma }} KHR
+                      {% if not m.is_active %}
+                        <span class="badge text-bg-light text-muted">Inactive</span>
+                      {% endif %}
+                    </span>
+                  {% endfor %}
+                {% else %}
+                  <span class="text-muted">No employees in this position.</span>
+                {% endif %}
+              </div>
+              <div class="d-flex gap-2 text-nowrap">
+                <a class="btn btn-sm btn-outline-secondary py-0"
+                   href="?edit={{ p.pk }}">Rename</a>
+                <a class="btn btn-sm btn-outline-danger py-0"
+                   href="?delete={{ p.pk }}">Delete</a>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
         {% empty %}
         <tr>
-          <td colspan="2" class="text-center text-muted py-4">
-            No positions yet. <a href="?new=1">Add the first one</a>.
+          <td colspan="4" class="text-center text-muted py-4">
+            {% if q %}
+              No positions match "{{ q }}".
+              <a href="{% url 'employees:position_list' %}">Clear the search</a>.
+            {% else %}
+              No positions yet. <a href="?new=1">Add the first one</a>.
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -70,32 +127,7 @@
 <div class="modal-backdrop fade show"></div>
 {% endif %}
 
-{# ---------- Delete modal ---------- #}
-{% if modal == 'delete' and target %}
-<div class="modal fade show d-block" tabindex="-1" role="dialog">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="post" action="{% url 'employees:position_delete' target.pk %}">
-        {% csrf_token %}
-        <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Delete Position</h6>
-          <a class="btn-close" href="{% url 'employees:position_list' %}"></a>
-        </div>
-        <div class="modal-body">
-          <p class="mb-1">Delete <strong>{{ target.name }}</strong>?</p>
-          <p class="text-muted small mb-0">If employees still use it, the delete will be blocked.</p>
-        </div>
-        <div class="modal-footer py-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:position_list' %}">Cancel</a>
-          <button class="btn btn-sm btn-danger" type="submit">Delete</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-<div class="modal-backdrop fade show"></div>
-{% endif %}
-
+{# ---------- Rename modal ---------- #}
 {% if modal == 'edit' and target %}
 <div class="modal fade show d-block" tabindex="-1" role="dialog">
   <div class="modal-dialog">
@@ -103,7 +135,7 @@
       <form method="post" action="{% url 'employees:position_update' target.pk %}">
         {% csrf_token %}
         <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">Edit Position</h6>
+          <h6 class="modal-title fw-semibold">Rename Position</h6>
           <a class="btn-close" href="{% url 'employees:position_list' %}"></a>
         </div>
         <div class="modal-body">
@@ -123,6 +155,32 @@
             <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:position_list' %}">Cancel</a>
             <button class="btn btn-accent btn-sm" type="submit">Save changes</button>
           </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show"></div>
+{% endif %}
+
+{# ---------- Delete modal ---------- #}
+{% if modal == 'delete' and target %}
+<div class="modal fade show d-block" tabindex="-1" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'employees:position_delete' target.pk %}">
+        {% csrf_token %}
+        <div class="modal-header py-2">
+          <h6 class="modal-title fw-semibold">Delete Position</h6>
+          <a class="btn-close" href="{% url 'employees:position_list' %}"></a>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">Delete <strong>{{ target.name }}</strong>?</p>
+          <p class="text-muted small mb-0">If employees still use it, the delete will be blocked.</p>
+        </div>
+        <div class="modal-footer py-2">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:position_list' %}">Cancel</a>
+          <button class="btn btn-sm btn-danger" type="submit">Delete</button>
         </div>
       </form>
     </div>

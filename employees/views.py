@@ -1,11 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import DepartmentForm, EmployeeForm, PositionForm
+from payroll.models import PayrollRun
+
 from .models import Department, Employee, Position
 
 
@@ -100,20 +102,75 @@ def employee_delete(request, pk):
     return redirect('employees:list')
 
 
-def _org_items(model):
-    return model.objects.annotate(count=Count('employees')).order_by('name')
+SORTS = {
+    'name': 'name',
+    'members': '-count',
+    'gross': '-gross_total',
+    'net': '-net_total',
+}
 
 
-def _org_render(request, template, model, form, modal=None, target=None, status=200):
+def _latest_run():
+    return PayrollRun.objects.first()  # ordered newest period first
+
+
+def _org_items(model, group_field, run, q='', sort='name'):
+    """Departments/positions with member counts and the latest run's cost.
+
+    `gross_total`/`net_total` come from one real run, so the template labels the
+    period instead of implying all-time totals.
+    """
+    qs = model.objects.annotate(count=Count('employees', distinct=True))
+    if q:
+        qs = qs.filter(name__icontains=q)
+    if run:
+        qs = qs.annotate(
+            gross_total=Sum(
+                'employees__payslips__gross',
+                filter=Q(employees__payslips__run=run),
+            ),
+            net_total=Sum(
+                'employees__payslips__net',
+                filter=Q(employees__payslips__run=run),
+            ),
+        ).order_by(SORTS.get(sort, 'name'), 'name')
+    else:
+        qs = qs.order_by(SORTS.get(sort, 'name'), 'name')
+    return qs
+
+
+def _org_render(request, template, model, form, group_field, modal=None, target=None,
+                status=200, q='', sort='name'):
+    run = _latest_run()
+    items = _org_items(model, group_field, run, q, sort)
+    expanded = _parse_pk(request.GET.get('show'))
+    members = []
+    if expanded:
+        item = items.filter(pk=expanded).first() or get_object_or_404(model, pk=expanded)
+        members = list(
+            item.employees.select_related('position', 'department').order_by('emp_id')
+        )
     return render(
         request,
         template,
-        {'items': _org_items(model), 'form': form, 'modal': modal, 'target': target},
+        {
+            'items': items,
+            'form': form,
+            'modal': modal,
+            'target': target,
+            'run': run,
+            'q': q,
+            'sort': sort,
+            'expanded': expanded,
+            'members': members,
+            'active_total': Employee.objects.filter(is_active=True).count(),
+            'group_field': group_field,
+        },
         status=status,
     )
 
 
-def _org_list_view(request, model, form, template):
+def _org_list_view(request, model, form, template, group_field):
     modal = target = None
     if request.GET.get('new'):
         modal = 'new'
@@ -126,31 +183,31 @@ def _org_list_view(request, model, form, template):
     elif delete_pk:
         target = get_object_or_404(model, pk=delete_pk)
         modal = 'delete'
-    return _org_render(request, template, model, form, modal, target)
+    q = request.GET.get('q', '').strip()
+    sort = request.GET.get('sort', 'name')
+    return _org_render(request, template, model, form, group_field,
+                       modal, target, q=q, sort=sort)
 
 
-def _org_create(request, form_cls, template, redirect_name, label):
+def _org_create(request, form_cls, template, redirect_name, label, group_field):
     form = form_cls(request.POST)
     if form.is_valid():
         item = form.save()
         messages.success(request, f'{label} {item.name} added.')
         return redirect(redirect_name)
-    return _org_render(
-        request, template, form_cls._meta.model, form, modal='new', status=200
-    )
+    return _org_render(request, template, form_cls._meta.model, form, group_field,
+                       modal='new', status=200)
 
 
-def _org_update(request, pk, form_cls, template, redirect_name, label):
+def _org_update(request, pk, form_cls, template, redirect_name, label, group_field):
     target = get_object_or_404(form_cls._meta.model, pk=pk)
     form = form_cls(request.POST, instance=target)
     if form.is_valid():
         item = form.save()
         messages.success(request, f'{label} {item.name} updated.')
         return redirect(redirect_name)
-    return _org_render(
-        request, template, form_cls._meta.model, form,
-        modal='edit', target=target, status=200,
-    )
+    return _org_render(request, template, form_cls._meta.model, form, group_field,
+                       modal='edit', target=target, status=200)
 
 
 def _org_delete(request, pk, model, redirect_name, label):
@@ -168,27 +225,22 @@ def _org_delete(request, pk, model, redirect_name, label):
 
 @login_required
 def department_list(request):
-    return _org_list_view(
-        request, Department, DepartmentForm(), 'employees/departments.html'
-    )
+    return _org_list_view(request, Department, DepartmentForm(),
+                          'employees/departments.html', 'department')
 
 
 @login_required
 @require_POST
 def department_create(request):
-    return _org_create(
-        request, DepartmentForm, 'employees/departments.html',
-        'employees:department_list', 'Department',
-    )
+    return _org_create(request, DepartmentForm, 'employees/departments.html',
+                       'employees:department_list', 'Department', 'department')
 
 
 @login_required
 @require_POST
 def department_update(request, pk):
-    return _org_update(
-        request, pk, DepartmentForm, 'employees/departments.html',
-        'employees:department_list', 'Department',
-    )
+    return _org_update(request, pk, DepartmentForm, 'employees/departments.html',
+                       'employees:department_list', 'Department', 'department')
 
 
 @login_required
@@ -201,27 +253,22 @@ def department_delete(request, pk):
 
 @login_required
 def position_list(request):
-    return _org_list_view(
-        request, Position, PositionForm(), 'employees/positions.html'
-    )
+    return _org_list_view(request, Position, PositionForm(),
+                          'employees/positions.html', 'position')
 
 
 @login_required
 @require_POST
 def position_create(request):
-    return _org_create(
-        request, PositionForm, 'employees/positions.html',
-        'employees:position_list', 'Position',
-    )
+    return _org_create(request, PositionForm, 'employees/positions.html',
+                       'employees:position_list', 'Position', 'position')
 
 
 @login_required
 @require_POST
 def position_update(request, pk):
-    return _org_update(
-        request, pk, PositionForm, 'employees/positions.html',
-        'employees:position_list', 'Position',
-    )
+    return _org_update(request, pk, PositionForm, 'employees/positions.html',
+                       'employees:position_list', 'Position', 'position')
 
 
 @login_required

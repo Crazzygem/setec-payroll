@@ -76,6 +76,36 @@
     .stat-card .stat-value { font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
     .table { font-variant-numeric: tabular-nums; }
     tbody tr[data-href] { cursor: pointer; }
+
+    /* Headcount share bar on the organization tables (R-31: proportion at a
+       glance without a chart, since the counts are small integers). */
+    .org-bar {
+      display: inline-block;
+      width: 64px;
+      height: 6px;
+      border-radius: 3px;
+      background: #e5e7eb;
+      overflow: hidden;
+      vertical-align: middle;
+    }
+    .org-bar::after {
+      content: '';
+      display: block;
+      width: var(--w, 0%);
+      height: 100%;
+      background: var(--accent);
+    }
+    .org-members > td { background: #f8fafc; padding-top: 0.6rem; padding-bottom: 0.6rem; }
+    .org-members .btn { min-height: 30px; }
+
+    .chart-box { position: relative; height: 240px; }
+    .hero-run {
+      background: var(--accent-strong);
+      color: #fff;
+      border: 0;
+    }
+    .hero-run .stat-label { color: rgba(255, 255, 255, 0.78); }
+    .hero-run a { color: #a7f3d0; }
     .table > :not(caption) > * > * { padding: 0.55rem 0.75rem; }
     .btn-accent { background: var(--accent-strong); color: #fff; }
     .btn-accent:hover { background: #065f46; color: #fff; }
