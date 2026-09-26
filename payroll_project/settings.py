@@ -21,6 +21,14 @@ SECRET_KEY = 'django-insecure-s!=6+&lqi2d8g&hyf(02q85x+ame43rm0fw*5a-(kxkpdf3u6h
 # Local dev keeps DEBUG on; the server sets DJANGO_DEBUG=0 (see systemd unit).
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
 
+# Behind an HTTPS-terminating proxy (e.g. Cloudflare) Django must be told the
+# original scheme, or CSRF referer checks compare https against http and fail.
+SECURE_PROXY_SSL_HEADER = (
+    ('HTTP_X_FORWARDED_PROTO', 'https')
+    if os.environ.get('DJANGO_TRUST_X_FORWARDED_PROTO', '') == '1'
+    else None
+)
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]'] + [
     host.strip()
     for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
