@@ -2,9 +2,6 @@
 {% load humanize %}
 {% block title %}Employees{% endblock %}
 {% block page_title %}Employees{% endblock %}
-{% block extra_css %}
-tbody tr[data-href] { cursor: pointer; }
-{% endblock %}
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
@@ -151,15 +148,4 @@ tbody tr[data-href] { cursor: pointer; }
 <div class="modal-backdrop fade show"></div>
 {% endif %}
 
-{% endblock %}
-
-{% block scripts %}
-<script>
-  document.querySelectorAll('tr[data-href]').forEach(function (row) {
-    row.addEventListener('click', function (e) {
-      if (e.target.closest('a, button')) return;
-      window.location = row.dataset.href;
-    });
-  });
-</script>
 {% endblock %}

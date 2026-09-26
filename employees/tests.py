@@ -195,3 +195,37 @@ class OrganizationTests(TestCase):
         )
         self.assertTrue(Position.objects.filter(pk=in_use.pk).exists())
         self.assertContains(response, 'employees still use it')
+
+    def test_department_rows_clickable_and_edit_renames(self):
+        department = Department.objects.create(name='IT')
+        response = self.client.get(reverse('employees:department_list'))
+        self.assertContains(response, f'data-href="?edit={department.pk}')
+        self.assertNotContains(response, '>Actions<')
+        response = self.client.get(
+            reverse('employees:department_list') + f'?edit={department.pk}'
+        )
+        self.assertEqual(response.context['modal'], 'edit')
+        self.assertContains(response, f'?delete={department.pk}')
+        response = self.client.post(
+            reverse('employees:department_update', args=[department.pk]),
+            {'name': 'Information Tech'},
+        )
+        self.assertRedirects(response, reverse('employees:department_list'))
+        department.refresh_from_db()
+        self.assertEqual(department.name, 'Information Tech')
+
+    def test_position_rows_clickable_and_edit_renames(self):
+        position = Position.objects.create(name='Analyst')
+        response = self.client.get(reverse('employees:position_list'))
+        self.assertContains(response, f'data-href="?edit={position.pk}')
+        response = self.client.get(
+            reverse('employees:position_list') + f'?edit={position.pk}'
+        )
+        self.assertEqual(response.context['modal'], 'edit')
+        response = self.client.post(
+            reverse('employees:position_update', args=[position.pk]),
+            {'name': 'Senior Analyst'},
+        )
+        self.assertRedirects(response, reverse('employees:position_list'))
+        position.refresh_from_db()
+        self.assertEqual(position.name, 'Senior Analyst')

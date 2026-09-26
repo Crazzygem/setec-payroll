@@ -81,72 +81,29 @@
         <tr>
           <th>ID</th><th>Employee</th><th class="text-end">Gross</th>
           <th class="text-end">NSSF 2%</th><th class="text-end">Tax</th>
-          <th class="text-end">Net pay</th><th class="text-end">Actions</th>
+          <th class="text-end">Net pay</th>
         </tr>
       </thead>
       <tbody>
         {% for slip in slips %}
-        <tr>
-          <td class="fw-semibold">{{ slip.employee.emp_id }}</td>
+        <tr data-href="{% url 'payroll:payslip_view' slip.pk %}">
+          <td class="fw-semibold">
+            <a href="{% url 'payroll:payslip_view' slip.pk %}">{{ slip.employee.emp_id }}</a>
+          </td>
           <td>{{ slip.employee.full_name }}
             <span class="text-muted small">· {{ slip.employee.position }}</span></td>
           <td class="text-end">{{ slip.gross|floatformat:0|intcomma }}</td>
           <td class="text-end">{{ slip.nssf_employee|floatformat:0|intcomma }}</td>
           <td class="text-end">{{ slip.salary_tax|floatformat:0|intcomma }}</td>
           <td class="text-end fw-semibold">{{ slip.net|floatformat:0|intcomma }}</td>
-          <td class="text-end text-nowrap">
-            {% if run.status == 'DRAFT' %}
-              <a class="btn btn-sm btn-outline-secondary py-0"
-                 href="?edit={{ slip.pk }}">Extras</a>
-            {% endif %}
-            <a class="btn btn-sm btn-outline-primary py-0"
-               href="{% url 'payroll:payslip_view' slip.pk %}">Payslip</a>
-          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-4">
+        <tr><td colspan="6" class="text-center text-muted py-4">
           No employees yet: add employees first.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
-
-{% if edit_form and target %}
-<div class="modal fade show d-block" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="post" action="{% url 'payroll:payslip_update' target.pk %}">
-        {% csrf_token %}
-        <div class="modal-header py-2">
-          <h6 class="modal-title fw-semibold">
-            Period Inputs · {{ target.employee.emp_id }} {{ target.employee.full_name }}</h6>
-          <a class="btn-close" href="{% url 'payroll:run_detail' run.pk %}"></a>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            {% for field in edit_form %}
-            <div class="col-4">
-              <label class="form-label small fw-semibold mb-1"
-                     for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field }}
-              {% for e in field.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
-            </div>
-            {% endfor %}
-          </div>
-          <p class="text-muted small mt-3 mb-0">
-            All amounts in KHR. Net pay and tax are recalculated on save.</p>
-        </div>
-        <div class="modal-footer py-2">
-          <a class="btn btn-sm btn-outline-secondary"
-             href="{% url 'payroll:run_detail' run.pk %}">Cancel</a>
-          <button class="btn btn-accent btn-sm" type="submit">Recalculate</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-<div class="modal-backdrop fade show"></div>
-{% endif %}
 
 {% endblock %}

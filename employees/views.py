@@ -117,9 +117,14 @@ def _org_list_view(request, model, form, template):
     modal = target = None
     if request.GET.get('new'):
         modal = 'new'
-    pk = _parse_pk(request.GET.get('delete'))
-    if pk:
-        target = get_object_or_404(model, pk=pk)
+    edit_pk = _parse_pk(request.GET.get('edit'))
+    delete_pk = _parse_pk(request.GET.get('delete'))
+    if edit_pk:
+        target = get_object_or_404(model, pk=edit_pk)
+        modal = 'edit'
+        form = form.__class__(instance=target)
+    elif delete_pk:
+        target = get_object_or_404(model, pk=delete_pk)
         modal = 'delete'
     return _org_render(request, template, model, form, modal, target)
 
@@ -132,6 +137,19 @@ def _org_create(request, form_cls, template, redirect_name, label):
         return redirect(redirect_name)
     return _org_render(
         request, template, form_cls._meta.model, form, modal='new', status=200
+    )
+
+
+def _org_update(request, pk, form_cls, template, redirect_name, label):
+    target = get_object_or_404(form_cls._meta.model, pk=pk)
+    form = form_cls(request.POST, instance=target)
+    if form.is_valid():
+        item = form.save()
+        messages.success(request, f'{label} {item.name} updated.')
+        return redirect(redirect_name)
+    return _org_render(
+        request, template, form_cls._meta.model, form,
+        modal='edit', target=target, status=200,
     )
 
 
@@ -166,6 +184,15 @@ def department_create(request):
 
 @login_required
 @require_POST
+def department_update(request, pk):
+    return _org_update(
+        request, pk, DepartmentForm, 'employees/departments.html',
+        'employees:department_list', 'Department',
+    )
+
+
+@login_required
+@require_POST
 def department_delete(request, pk):
     return _org_delete(
         request, pk, Department, 'employees:department_list', 'Department'
@@ -184,6 +211,15 @@ def position_list(request):
 def position_create(request):
     return _org_create(
         request, PositionForm, 'employees/positions.html',
+        'employees:position_list', 'Position',
+    )
+
+
+@login_required
+@require_POST
+def position_update(request, pk):
+    return _org_update(
+        request, pk, PositionForm, 'employees/positions.html',
         'employees:position_list', 'Position',
     )
 

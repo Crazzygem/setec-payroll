@@ -78,19 +78,66 @@
     .badge-status { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 999px;
                     background: #fef3c7; color: #92400e; font-weight: 600; }
     .badge-status.final { background: #d1fae5; color: #065f46; }
+    .edit-panel {
+      width: 794px; max-width: 100%; margin: 0 auto 1rem;
+      background: #fff; border: 1px solid #d1d5db;
+      border-left: 3px solid var(--accent-strong);
+      border-radius: 0.5rem; padding: 1rem 1.25rem;
+    }
+    .edit-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.7rem; font-size: 0.9rem;
+    }
+    .edit-fields { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .edit-fields label {
+      display: block; font-size: 0.75rem; font-weight: 600; color: #6b7280;
+      margin-bottom: 0.2rem;
+    }
+    .edit-fields input {
+      border: 1px solid #d1d5db; border-radius: 0.4rem;
+      padding: 0.4rem 0.6rem; font-size: 0.85rem; width: 9rem;
+    }
+    .edit-error { display: block; color: #b91c1c; font-size: 0.75rem; }
+    .edit-note { font-size: 0.75rem; color: #6b7280; margin: 0.7rem 0; }
     @media print {
       body { background: #fff; padding: 0; }
       .sheet { box-shadow: none; padding: 0; border-radius: 0; }
-      .actions { display: none; }
+      .actions, .edit-panel { display: none; }
     }
   </style>
 </head>
 <body>
   <div class="actions">
     <a class="btn" href="javascript:history.back()"><i class="bi bi-arrow-left"></i> Back</a>
+    {% if slip.run.is_draft %}
+    <a class="btn" href="?edit=1"><i class="bi bi-sliders"></i> Extras</a>
+    {% endif %}
     <button class="btn btn-primary" onclick="window.print()">
       <i class="bi bi-printer"></i> Print / Save PDF</button>
   </div>
+
+  {% if edit_form %}
+  <div class="edit-panel">
+    <form method="post" action="{% url 'payroll:payslip_update' slip.pk %}">
+      {% csrf_token %}
+      <div class="edit-head">
+        <strong>Period inputs · {{ slip.employee.emp_id }} {{ slip.employee.full_name }}</strong>
+        <a class="btn" href="{% url 'payroll:payslip_view' slip.pk %}">Cancel</a>
+      </div>
+      <div class="edit-fields">
+        {% for field in edit_form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for e in field.errors %}<span class="edit-error">{{ e }}</span>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <p class="edit-note">All amounts in KHR. Net pay and tax are recalculated on save.</p>
+      <button class="btn btn-primary" type="submit">Recalculate</button>
+    </form>
+  </div>
+  {% endif %}
 
   <div class="sheet">
     <div class="payslip-head">

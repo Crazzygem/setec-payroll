@@ -23,13 +23,13 @@ Open http://127.0.0.1:8000/ and sign in with `hr` / `payroll2026`.
    again. Point out KHR formatting.
 
 3. **Payroll runs (90 s)**: the Payroll Runs list shows Aug (finalized) and
-   Sep (draft) with totals. Open **September**:
+   Sep (draft) with totals. Click the **September** row to open it:
    - Totals cards: gross / NSSF / tax withheld / net / employer cost
    - Banner: "salary tax must be paid to GDT by 20 Oct 2026"
 
-4. **The engine (90 s)**: in the Sep table, open **Extras** for EMP001,
-   set Overtime to `150000` and **Recalculate**. Net updates to 2,277,700.
-   Then hand-verify on screen:
+4. **The engine (90 s)**: click **EMP001's row** to open the payslip, click
+   **Extras**, set Overtime to `150000` and **Recalculate** (you land back on
+   the run). The row's net updates to 2,277,700. Then hand-verify on screen:
    ```
    gross 2,350,000 - NSSF 47,000 (2%) - tax 25,300 = net 2,277,700
    taxable 2,003,000 -> 25,000 (5% band) + 3,000 x 10% = 25,300
@@ -43,7 +43,7 @@ Open http://127.0.0.1:8000/ and sign in with `hr` / `payroll2026`.
    green, edit buttons disappear (locked), success message shows the GDT
    deadline.
 
-7. **If asked about tests**: `python manage.py test` shows 46 tests,
+7. **If asked about tests**: `python manage.py test` shows 52 tests,
    including hand-computed tax band boundaries.
 
 8. **If asked about design**: `DESIGN.md` holds the direction (emerald accent,
@@ -61,7 +61,7 @@ Open http://127.0.0.1:8000/ and sign in with `hr` / `payroll2026`.
 
 ## Submission checklist
 
-- [ ] `python manage.py test` shows 46 OK (run once right before submitting)
+- [ ] `python manage.py test` shows 52 OK (run once right before submitting)
 - [ ] `python manage.py seed_demo && python manage.py runserver` demo works
 - [ ] Screenshots added to README (dashboard, employees, run detail, payslip)
 - [ ] Demo video recorded (5 min, follow this script)

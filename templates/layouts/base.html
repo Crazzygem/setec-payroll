@@ -75,6 +75,7 @@
     .stat-card .stat-label { color: #6b7280; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
     .stat-card .stat-value { font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
     .table { font-variant-numeric: tabular-nums; }
+    tbody tr[data-href] { cursor: pointer; }
     .table > :not(caption) > * > * { padding: 0.55rem 0.75rem; }
     .btn-accent { background: var(--accent-strong); color: #fff; }
     .btn-accent:hover { background: #065f46; color: #fff; }
@@ -188,6 +189,12 @@
         }
       });
     }
+    document.querySelectorAll('tr[data-href]').forEach(function (row) {
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('a, button')) return;
+        window.location = row.dataset.href;
+      });
+    });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       var modal = document.querySelector('.modal.show.d-block');

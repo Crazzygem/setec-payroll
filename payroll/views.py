@@ -65,24 +65,10 @@ def run_detail(request, pk):
         nssf_employer=Sum('nssf_employer'),
     )
 
-    # Optional "edit extras" modal for one payslip (draft runs only)
-    edit_form, target = None, None
-    edit_pk = request.GET.get('edit')
-    if edit_pk and run.is_draft:
-        target = slips.filter(pk=edit_pk).first()
-        if target:
-            edit_form = PayslipExtrasForm(instance=target)
-
     return render(
         request,
         'payroll/run_detail.html',
-        {
-            'run': run,
-            'slips': slips,
-            'totals': totals,
-            'edit_form': edit_form,
-            'target': target,
-        },
+        {'run': run, 'slips': slips, 'totals': totals},
     )
 
 
@@ -154,8 +140,16 @@ def export_xlsx(request, pk):
 
 @login_required
 def payslip_view(request, payslip_pk):
-    """Standalone printable payslip (no sidebar, clean A4 print)."""
+    """Standalone printable payslip (no sidebar, clean A4 print).
+
+    `?edit=1` opens the inline extras panel (draft runs only).
+    """
     payslip = get_object_or_404(
         Payslip.objects.select_related('employee', 'run'), pk=payslip_pk
     )
-    return render(request, 'payroll/payslip.html', {'slip': payslip})
+    edit_form = None
+    if request.GET.get('edit') and payslip.run.is_draft:
+        edit_form = PayslipExtrasForm(instance=payslip)
+    return render(
+        request, 'payroll/payslip.html', {'slip': payslip, 'edit_form': edit_form}
+    )

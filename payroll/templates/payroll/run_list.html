@@ -21,13 +21,14 @@
           <th class="text-end">Gross (KHR)</th>
           <th class="text-end">Tax withheld (KHR)</th>
           <th class="text-end">Net paid (KHR)</th>
-          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for run in runs %}
-        <tr>
-          <td class="fw-semibold">{{ run.period_label }}</td>
+        <tr data-href="{% url 'payroll:run_detail' run.pk %}">
+          <td class="fw-semibold">
+            <a href="{% url 'payroll:run_detail' run.pk %}">{{ run.period_label }}</a>
+          </td>
           <td class="text-center">
             {% if run.status == 'DRAFT' %}
               <span class="badge text-bg-warning">Draft</span>
@@ -39,14 +40,10 @@
           <td class="text-end">{{ run.gross_total|floatformat:0|intcomma }}</td>
           <td class="text-end">{{ run.tax_total|floatformat:0|intcomma }}</td>
           <td class="text-end">{{ run.net_total|floatformat:0|intcomma }}</td>
-          <td class="text-end">
-            <a class="btn btn-sm btn-outline-secondary py-0"
-               href="{% url 'payroll:run_detail' run.pk %}">Open</a>
-          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="text-center text-muted py-4">
+          <td colspan="6" class="text-center text-muted py-4">
             No payroll runs yet. <a href="?new=1">Generate the first one</a>.
           </td>
         </tr>

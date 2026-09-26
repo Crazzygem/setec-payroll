@@ -13,6 +13,9 @@ Built as the final project for the Python course.
 - **Organization**: departments and job titles managed in-app under the
   Organization sidebar group; the employee form picks from those dropdowns,
   and a list item still in use cannot be deleted.
+- **Clickable tables**: every data table opens its record on row click (runs,
+  payslips, departments, positions). No action columns; each row keeps a real
+  link in its first cell for keyboard and no-JS use.
 - **Payroll engine**: pure `Decimal` calculations with unit tests:
   - Progressive monthly salary tax (0% / 5% / 10% / 15% / 20%, marginal)
   - NSSF: 2% employee (pension), 5.4% employer (occupational risk + health + pension)
@@ -61,7 +64,7 @@ Open http://127.0.0.1:8000/ and sign in:
 python manage.py test
 ```
 
-46 tests: payroll-engine band boundaries (hand-computed expectations),
+52 tests: payroll-engine band boundaries (hand-computed expectations),
 payslip math, CRUD, run generation, finalize locking, payslip rendering.
 
 ## Calculation rules and sources
@@ -118,6 +121,6 @@ Employer NSSF (5.4%)   =   118,800
 │   ├── services.py         # run generation, payslip recalculation
 │   ├── models.py           # PayrollRun, Payslip
 │   ├── views.py            # runs, extras editing, finalize, payslip print
-│   └── tests/              # engine + view tests (46 total incl. employees + exports)
+│   └── tests/              # engine, run-view, export tests (33)
 └── templates/              # base layout, login
 ```

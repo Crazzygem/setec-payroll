@@ -160,3 +160,56 @@ class PayrollRunTests(TestCase):
         self.assertEqual(response.status_code, 302)
         slip.refresh_from_db()
         self.assertEqual(slip.overtime, Decimal('0'))
+
+    def test_run_list_rows_clickable_no_open_button(self):
+        self.generate()
+        response = self.client.get(reverse('payroll:run_list'))
+        run = PayrollRun.objects.get()
+        self.assertContains(
+            response, f'data-href="{reverse("payroll:run_detail", args=[run.pk])}"'
+        )
+        self.assertNotContains(response, '>Open<')
+        self.assertNotContains(response, '>Actions<')
+
+    def test_run_detail_rows_open_payslips_without_action_buttons(self):
+        make_employee()
+        self.generate()
+        run = PayrollRun.objects.get()
+        slip = run.payslips.get()
+        response = self.client.get(reverse('payroll:run_detail', args=[run.pk]))
+        self.assertContains(
+            response,
+            f'data-href="{reverse("payroll:payslip_view", args=[slip.pk])}"',
+        )
+        self.assertNotContains(response, '>Extras<')
+        self.assertNotContains(response, '>Payslip<')
+        self.assertNotContains(response, '>Actions<')
+
+    def test_dashboard_recent_runs_clickable(self):
+        self.generate()
+        response = self.client.get(reverse('home'))
+        run = PayrollRun.objects.get()
+        self.assertContains(
+            response, f'data-href="{reverse("payroll:run_detail", args=[run.pk])}"'
+        )
+        self.assertNotContains(response, '>Open<')
+
+    def test_payslip_extras_panel_draft_only(self):
+        make_employee()
+        self.generate()
+        run = PayrollRun.objects.get()
+        slip = run.payslips.get()
+        url = reverse('payroll:payslip_view', args=[slip.pk])
+        response = self.client.get(url)
+        self.assertContains(response, 'Extras')
+        self.assertNotContains(response, 'class="edit-panel"')
+        response = self.client.get(url + '?edit=1')
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.context['edit_form'])
+        self.assertContains(response, 'class="edit-panel"')
+        run.status = PayrollRun.STATUS_FINALIZED
+        run.save(update_fields=['status'])
+        response = self.client.get(url + '?edit=1')
+        self.assertIsNone(response.context['edit_form'])
+        response = self.client.get(url)
+        self.assertNotContains(response, 'Extras')
